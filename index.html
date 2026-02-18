@@ -1,239 +1,245 @@
-import React, { useState } from 'react';
-import { Plus, Trash2, MapPin, Calendar, DollarSign, Package, Camera, Search } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>食材管理系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --theme-color: #D9A05B;
+        }
+        body {
+            background-color: #FDF8F3;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .theme-text { color: var(--theme-color); }
+        .theme-bg { background-color: var(--theme-color); }
+        .theme-border { border-color: #EEDCC8; }
+        .focus-ring:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(217, 160, 91, 0.4);
+        }
+        /* 優化手機端滾動 */
+        .custom-scroll {
+            -webkit-overflow-scrolling: touch;
+        }
+        /* 隱藏預設 input file */
+        #imageInput { display: none; }
+    </style>
+</head>
+<body class="font-sans text-gray-800">
 
-const App = () => {
-  const [items, setItems] = useState([]);
-  const [formData, setFormData] = useState({
-    name: '',
-    purchaseDate: '',
-    price: '',
-    location: '',
-    image: null
-  });
-  const [preview, setPreview] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  // 指定色系
-  const themeColor = "#D9A05B";
-
-  // 處理圖片上傳
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result);
-        setFormData({ ...formData, image: reader.result });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // 新增食材 (全部非必填)
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    const newItem = {
-      ...formData,
-      name: formData.name || '未命名食材',
-      id: Date.now(),
-    };
-
-    setItems([newItem, ...items]);
-    
-    // 重設表單
-    setFormData({
-      name: '',
-      purchaseDate: '',
-      price: '',
-      location: '',
-      image: null
-    });
-    setPreview(null);
-  };
-
-  // 刪除食材
-  const deleteItem = (id) => {
-    setItems(items.filter(item => item.id !== id));
-  };
-
-  // 過濾搜尋結果
-  const filteredItems = items.filter(item => 
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.location.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  return (
-    <div className="min-h-screen bg-[#FDF8F3] p-4 md:p-8 text-gray-800">
-      <div className="max-w-4xl mx-auto">
-        <header className="mb-8 text-center">
-          <h1 className="text-3xl font-bold mb-2 flex justify-center items-center gap-2" style={{ color: themeColor }}>
-            <Package /> 食材管理系統
-          </h1>
-          <p className="text-gray-500">記錄您的美食地圖</p>
+    <div class="max-w-xl mx-auto min-h-screen px-4 py-6 md:py-10">
+        <!-- Header -->
+        <header class="text-center mb-6">
+            <h1 class="text-2xl md:text-3xl font-bold flex justify-center items-center gap-2 theme-text">
+                <i class="fas fa-box-open"></i> 食材管理系統
+            </h1>
+            <p class="text-gray-500 text-sm mt-1">記錄您的美食地圖</p>
         </header>
 
-        {/* 新增欄位區塊 */}
-        <div className="bg-white rounded-2xl shadow-sm border border-[#EEDCC8] p-6 mb-8">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: themeColor }}>
-            <Plus size={20} /> 新增食材
-          </h2>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">食材名稱</label>
-                <input
-                  type="text"
-                  placeholder="例如：日本 A5 和牛"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 outline-none transition-all"
-                  style={{ '--tw-ring-color': themeColor }}
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+        <!-- 新增食材區塊 -->
+        <section class="bg-white rounded-2xl shadow-sm border theme-border p-5 mb-6">
+            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 theme-text">
+                <i class="fas fa-plus-circle text-sm"></i> 新增食材
+            </h2>
+            
+            <form id="foodForm" class="space-y-4">
+                <!-- 名稱 -->
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">購買日期</label>
-                  <input
-                    type="date"
-                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 outline-none"
-                    style={{ '--tw-ring-color': themeColor }}
-                    value={formData.purchaseDate}
-                    onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
-                  />
+                    <label class="block text-xs font-medium text-gray-500 mb-1 pl-1">食材名稱</label>
+                    <input type="text" id="foodName" placeholder="例如：日本 A5 和牛" 
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus-ring transition-all">
                 </div>
+
+                <!-- 日期與價格 -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1 pl-1">購買日期</label>
+                        <input type="date" id="foodDate" 
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus-ring">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1 pl-1">價格</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-3.5 text-gray-400 text-sm">$</span>
+                            <input type="number" id="foodPrice" placeholder="0" 
+                                class="w-full pl-8 pr-4 py-3 rounded-xl border border-gray-200 focus-ring">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 存放地方 -->
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">價格</label>
-                  <div className="relative">
-                    <DollarSign size={16} className="absolute left-3 top-3 text-gray-400" />
-                    <input
-                      type="number"
-                      placeholder="0"
-                      className="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-200 focus:ring-2 outline-none"
-                      style={{ '--tw-ring-color': themeColor }}
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    />
-                  </div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1 pl-1">存放地方</label>
+                    <input type="text" id="foodLocation" placeholder="例如：冰箱下層左側" 
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus-ring">
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">存放地方</label>
-                <input
-                  type="text"
-                  placeholder="例如：冰箱下層左側"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 outline-none"
-                  style={{ '--tw-ring-color': themeColor }}
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                />
-              </div>
-            </div>
+                <!-- 圖片上傳區域 -->
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1 pl-1">食材圖片</label>
+                    <div id="dropZone" onclick="document.getElementById('imageInput').click()" 
+                        class="h-32 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#D9A05B] transition-colors overflow-hidden">
+                        <div id="uploadPlaceholder" class="text-center">
+                            <i class="fas fa-camera text-gray-300 text-2xl mb-1"></i>
+                            <p class="text-xs text-gray-400">點擊上傳圖片</p>
+                        </div>
+                        <img id="imagePreview" src="" class="hidden w-full h-full object-cover">
+                    </div>
+                    <input type="file" id="imageInput" accept="image/*">
+                </div>
 
-            <div className="flex flex-col">
-              <label className="block text-sm font-medium text-gray-600 mb-1">食材圖片</label>
-              <div 
-                className="flex-1 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-colors relative overflow-hidden group border-gray-200 hover:border-[#D9A05B]"
-                onClick={() => document.getElementById('imageInput').click()}
-              >
-                {preview ? (
-                  <img src={preview} alt="Preview" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="text-center p-4">
-                    <Camera className="mx-auto text-gray-400 mb-2 group-hover:text-[#D9A05B] transition-colors" size={32} />
-                    <span className="text-sm text-gray-400">點擊上傳圖片</span>
-                  </div>
-                )}
-                <input
-                  id="imageInput"
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  onChange={handleImageChange}
-                />
-              </div>
-              <button
-                type="submit"
-                className="mt-4 w-full text-white font-semibold py-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
-                style={{ backgroundColor: themeColor }}
-              >
-                <Plus size={20} /> 新增到清單
-              </button>
-            </div>
-          </form>
+                <button type="submit" 
+                    class="w-full theme-bg text-white font-bold py-4 rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-2">
+                    <i class="fas fa-plus"></i> 新增到清單
+                </button>
+            </form>
+        </section>
+
+        <!-- 搜尋欄位 -->
+        <div class="sticky top-4 z-10 mb-6 flex items-center bg-white/90 backdrop-blur rounded-xl shadow-sm border border-gray-100 px-4 py-3">
+            <i class="fas fa-search text-gray-400 mr-2"></i>
+            <input type="text" id="searchInput" placeholder="搜尋名稱或存放地點..." 
+                class="w-full bg-transparent outline-none text-sm text-gray-600">
         </div>
 
-        {/* 搜尋與過濾 */}
-        <div className="mb-6 flex items-center bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-2">
-          <Search size={20} className="text-gray-400 mr-2" />
-          <input
-            type="text"
-            placeholder="搜尋名稱或存放地點..."
-            className="w-full bg-transparent outline-none text-gray-600"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <!-- 食材清單容器 -->
+        <div id="foodList" class="space-y-4 pb-20">
+            <!-- 動態生成內容 -->
         </div>
 
-        {/* 食材清單 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-10">
-          {filteredItems.length > 0 ? (
-            filteredItems.map((item) => (
-              <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm border border-[#EEDCC8] flex gap-4 hover:shadow-md transition-shadow">
-                <div className="w-24 h-24 bg-[#F9F3EE] rounded-xl overflow-hidden flex-shrink-0">
-                  {item.image ? (
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[#EEDCC8]">
-                      <Package size={32} />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 flex flex-col justify-between">
-                  <div>
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-bold text-gray-800 text-lg leading-tight">{item.name}</h3>
-                      <button 
-                        onClick={() => deleteItem(item.id)}
-                        className="text-gray-300 hover:text-red-500 transition-colors p-1"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                    <div className="mt-2 space-y-1 text-xs text-gray-500">
-                      <div className="flex items-center gap-1">
-                        <Calendar size={12} style={{ color: themeColor }} /> 
-                        {item.purchaseDate || '未填寫日期'}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin size={12} style={{ color: themeColor }} /> 
-                        {item.location || '未標註地點'}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-end mt-2">
-                    <span className="font-bold text-lg" style={{ color: themeColor }}>
-                      ${item.price || '0'}
-                    </span>
-                    <span className="bg-[#FAF0E6] text-[#D9A05B] text-[10px] px-2 py-1 rounded-full font-medium border border-[#EEDCC8]">
-                      在庫
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="col-span-full py-16 text-center bg-white rounded-2xl border-2 border-dashed border-[#EEDCC8]">
-              <Package className="mx-auto text-[#EEDCC8] mb-2" size={48} />
-              <p className="text-gray-400 italic">目前還沒有記錄任何食材</p>
-            </div>
-          )}
+        <!-- 空白狀態提示 -->
+        <div id="emptyState" class="hidden py-16 text-center bg-white rounded-2xl border-2 border-dashed theme-border">
+            <i class="fas fa-box-open mx-auto text-[#EEDCC8] text-5xl mb-3"></i>
+            <p class="text-gray-400 italic">目前還沒有記錄任何食材</p>
         </div>
-      </div>
     </div>
-  );
-};
 
-export default App;
+    <script>
+        let items = [];
+        let currentImageData = null;
+
+        // 元素選取
+        const foodForm = document.getElementById('foodForm');
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+        const foodList = document.getElementById('foodList');
+        const emptyState = document.getElementById('emptyState');
+        const searchInput = document.getElementById('searchInput');
+
+        // 圖片處理
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    currentImageData = event.target.result;
+                    imagePreview.src = currentImageData;
+                    imagePreview.classList.remove('hidden');
+                    uploadPlaceholder.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 提交表單
+        foodForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const newItem = {
+                id: Date.now(),
+                name: document.getElementById('foodName').value || '未命名食材',
+                date: document.getElementById('foodDate').value || '未填寫日期',
+                price: document.getElementById('foodPrice').value || '0',
+                location: document.getElementById('foodLocation').value || '未標註地點',
+                image: currentImageData
+            };
+
+            items.unshift(newItem);
+            resetForm();
+            renderItems();
+        });
+
+        function resetForm() {
+            foodForm.reset();
+            currentImageData = null;
+            imagePreview.src = "";
+            imagePreview.classList.add('hidden');
+            uploadPlaceholder.classList.remove('hidden');
+        }
+
+        function deleteItem(id) {
+            items = items.filter(item => item.id !== id);
+            renderItems();
+        }
+
+        // 搜尋監聽
+        searchInput.addEventListener('input', renderItems);
+
+        function renderItems() {
+            const keyword = searchInput.value.toLowerCase();
+            const filteredItems = items.filter(item => 
+                item.name.toLowerCase().includes(keyword) || 
+                item.location.toLowerCase().includes(keyword)
+            );
+
+            if (filteredItems.length === 0) {
+                foodList.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            foodList.innerHTML = filteredItems.map(item => `
+                <div class="bg-white rounded-2xl p-4 shadow-sm border theme-border flex gap-4 animate-fadeIn">
+                    <div class="w-20 h-20 md:w-24 md:h-24 bg-[#F9F3EE] rounded-xl overflow-hidden flex-shrink-0">
+                        ${item.image ? 
+                            `<img src="${item.image}" class="w-full h-full object-cover">` : 
+                            `<div class="w-full h-full flex items-center justify-center text-[#EEDCC8]"><i class="fas fa-box text-2xl"></i></div>`
+                        }
+                    </div>
+                    <div class="flex-1 flex flex-col justify-between overflow-hidden">
+                        <div>
+                            <div class="flex justify-between items-start">
+                                <h3 class="font-bold text-gray-800 text-base md:text-lg truncate pr-2">${item.name}</h3>
+                                <button onclick="deleteItem(${item.id})" class="text-gray-300 hover:text-red-500 p-1">
+                                    <i class="fas fa-trash-can text-sm"></i>
+                                </button>
+                            </div>
+                            <div class="mt-1 space-y-0.5 text-[11px] md:text-xs text-gray-500">
+                                <div class="flex items-center gap-1">
+                                    <i class="far fa-calendar-alt theme-text"></i> ${item.date}
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <i class="fas fa-location-dot theme-text"></i> ${item.location}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-end mt-2">
+                            <span class="font-bold text-base md:text-lg theme-text">$${item.price}</span>
+                            <span class="bg-[#FAF0E6] text-[#D9A05B] text-[10px] px-2 py-0.5 rounded-full font-medium border theme-border">在庫</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 初始化
+        renderItems();
+    </script>
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+    </style>
+</body>
+</html>
