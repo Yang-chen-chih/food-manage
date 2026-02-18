@@ -12,16 +12,18 @@
     <style>
         :root { 
             --theme-color: #D9A05B; 
-            --bg-color: #F9F7F2; /* 奶油白背景 */
-            --input-border: #E5E7EB;
-            --text-muted: #9CA3AF;
+            /* 調整為更明顯的米色調 */
+            --bg-color: #F5EFE6; 
+            --card-bg: #FFFBF5;
+            --input-border: #E8DFD0;
+            --text-muted: #A39684;
         } 
         
         body { 
             background-color: var(--bg-color); 
-            background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.8) 0%, transparent 70%);
+            background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.5) 0%, transparent 75%);
             background-attachment: fixed;
-            color: #4B5563;
+            color: #5D5448;
         }
 
         .theme-text { color: var(--theme-color); }
@@ -38,12 +40,12 @@
             color: var(--theme-color);
         }
 
-        /* 紮實的卡片設計 */
+        /* 紮實的卡片設計 - 改為米白色 */
         .solid-card {
-            background: #FFFFFF;
+            background: var(--card-bg);
             border-radius: 1.5rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-            border: 1px solid rgba(0, 0, 0, 0.02);
+            box-shadow: 0 8px 30px rgba(139, 115, 85, 0.08);
+            border: 1px solid rgba(217, 160, 91, 0.1);
         }
 
         /* 輸入框樣式 */
@@ -52,13 +54,13 @@
             padding: 0.75rem 1rem;
             border-radius: 0.75rem;
             border: 1px solid var(--input-border);
-            background: transparent;
+            background: #FFFFFF;
             transition: all 0.2s;
             outline: none;
         }
         .custom-input:focus {
             border-color: var(--theme-color);
-            box-shadow: 0 0 0 2px rgba(217, 160, 91, 0.1);
+            box-shadow: 0 0 0 3px rgba(217, 160, 91, 0.15);
         }
 
         .label-text {
@@ -66,6 +68,7 @@
             font-size: 0.875rem;
             color: var(--text-muted);
             margin-bottom: 0.5rem;
+            font-weight: 500;
         }
 
         #imageInput { display: none; }
@@ -84,19 +87,29 @@
             opacity: 0.7;
             cursor: not-allowed;
         }
+
+        /* 列表卡片微調 */
+        .list-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(217, 160, 91, 0.08);
+            transition: transform 0.2s;
+        }
+        .list-card:active {
+            transform: scale(0.98);
+        }
     </style>
 </head>
 <body class="font-sans">
 
     <div id="loadingOverlay">
         <div class="animate-spin rounded-full h-10 w-10 border-4 border-[#D9A05B] border-t-transparent mb-4"></div>
-        <p class="theme-text font-medium text-sm">正在連線至雲端資料庫...</p>
+        <p class="theme-text font-medium text-sm">正在載入廚房...</p>
     </div>
 
     <div class="max-w-2xl mx-auto min-h-screen px-4 py-12">
         <header class="text-center mb-10">
             <div class="app-title">
-                <i class="fas fa-leaf text-3xl"></i> 食材管理
+                <i class="fas fa-utensils text-3xl"></i> 食材管理
             </div>
         </header>
 
@@ -131,16 +144,15 @@
                 </div>
 
                 <div>
-                    <label class="label-text">圖片支援 (可選擇拍照或上傳)</label>
+                    <label class="label-text">圖片支援</label>
                     <div id="dropZone" onclick="document.getElementById('imageInput').click()" 
-                        class="h-40 border-2 border-dashed border-gray-100 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#D9A05B] transition-colors overflow-hidden bg-gray-50/50">
+                        class="h-40 border-2 border-dashed border-[#E8DFD0] rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#D9A05B] transition-colors overflow-hidden bg-[#FFFFFF]/50">
                         <div id="uploadPlaceholder" class="text-center">
                             <i class="fas fa-camera text-gray-300 text-3xl mb-2"></i>
-                            <p class="text-xs text-gray-400">點擊選擇相片或拍照</p>
+                            <p class="text-xs text-gray-400">點擊上傳相片</p>
                         </div>
                         <img id="imagePreview" src="" class="hidden w-full h-full object-cover">
                     </div>
-                    <!-- 移除 capture 屬性，讓瀏覽器顯示原生選擇選單 -->
                     <input type="file" id="imageInput" accept="image/*">
                 </div>
 
@@ -155,8 +167,8 @@
         <div id="foodList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         
         <div id="emptyState" class="hidden py-16 text-center">
-            <i class="fas fa-box-open mx-auto text-gray-200 text-5xl mb-3"></i>
-            <p class="text-gray-400 italic text-sm">目前沒有任何食材</p>
+            <i class="fas fa-box-open mx-auto text-gray-300 text-5xl mb-3"></i>
+            <p class="text-gray-400 italic text-sm">空空如也</p>
         </div>
     </div>
 
@@ -194,24 +206,6 @@
                 loadingOverlay.style.opacity = '0';
                 setTimeout(() => loadingOverlay.style.display = 'none', 400);
 
-                // 實時更新
-                supabaseClient
-                    .channel('schema-db-changes')
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'foods' }, payload => {
-                        if (payload.eventType === 'INSERT') {
-                            items.unshift(payload.new);
-                        }
-                        if (payload.eventType === 'DELETE') {
-                            items = items.filter(i => i.id !== payload.old.id);
-                        }
-                        if (payload.eventType === 'UPDATE') {
-                            const idx = items.findIndex(i => i.id === payload.new.id);
-                            if (idx !== -1) items[idx] = payload.new;
-                        }
-                        renderItems();
-                    })
-                    .subscribe();
-
             } catch (err) {
                 console.error("Initialization Error:", err);
             }
@@ -220,7 +214,6 @@
         imageInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
-                // 圖片壓縮檢查或處理
                 if (file.size > 2 * 1024 * 1024) { 
                     alert("圖片請小於 2MB"); 
                     return; 
@@ -239,13 +232,12 @@
         foodForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // 開始上傳動畫狀態
             submitBtn.disabled = true;
-            btnText.textContent = "上傳中...";
+            btnText.textContent = "正在同步中...";
             btnIcon.className = "fas fa-spinner fa-spin";
             
             const payload = {
-                name: document.getElementById('foodName').value || "未命名食材",
+                name: document.getElementById('foodName').value || "未命名",
                 date: document.getElementById('foodDate').value || null,
                 price: document.getElementById('foodPrice').value || "0",
                 location: document.getElementById('foodLocation').value || "",
@@ -256,25 +248,22 @@
 
             if (error) {
                 alert("儲存失敗: " + error.message);
-                // 恢復按鈕狀態
                 submitBtn.disabled = false;
-                btnText.textContent = "上傳";
+                btnText.textContent = "確認上傳";
                 btnIcon.className = "fas fa-cloud-upload-alt";
             } else {
-                // 上傳成功，直接重整網頁
                 window.location.reload();
             }
         });
 
         window.deleteItem = async (id) => {
-            if (!confirm('確定要刪除這筆記錄嗎？')) return;
+            if (!confirm('確定要移除這項食材嗎？')) return;
             
             const { error } = await supabaseClient.from('foods').delete().eq('id', id);
             
             if (error) {
                 alert("刪除失敗: " + error.message);
             } else {
-                // 刪除成功後自動重整網頁
                 window.location.reload();
             }
         };
@@ -288,9 +277,9 @@
 
             emptyState.classList.add('hidden');
             foodList.innerHTML = items.map(item => `
-                <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-4 animate-fadeIn">
-                    <div class="w-20 h-20 bg-gray-50 rounded-xl overflow-hidden flex-shrink-0">
-                        ${item.image ? `<img src="${item.image}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-gray-200"><i class="fas fa-utensils"></i></div>`}
+                <div class="list-card rounded-2xl p-4 shadow-sm flex gap-4 animate-fadeIn">
+                    <div class="w-20 h-20 bg-[#F0EAE0] rounded-xl overflow-hidden flex-shrink-0">
+                        ${item.image ? `<img src="${item.image}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-[#D6C7B1]"><i class="fas fa-utensils"></i></div>`}
                     </div>
                     <div class="flex-1 flex flex-col justify-between overflow-hidden">
                         <div>
