@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>食材管理系統</title>
+    <link rel="icon" href="foodicon.png" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -127,7 +128,6 @@
         let items = [];
         let currentImageData = null;
 
-        // 元素選取
         const foodForm = document.getElementById('foodForm');
         const imageInput = document.getElementById('imageInput');
         const imagePreview = document.getElementById('imagePreview');
@@ -136,7 +136,6 @@
         const emptyState = document.getElementById('emptyState');
         const searchInput = document.getElementById('searchInput');
 
-        // 圖片處理
         imageInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -151,7 +150,6 @@
             }
         });
 
-        // 提交表單
         foodForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -182,7 +180,6 @@
             renderItems();
         }
 
-        // 搜尋監聽
         searchInput.addEventListener('input', renderItems);
 
         function renderItems() {
@@ -233,7 +230,6 @@
             `).join('');
         }
 
-        // 初始化
         renderItems();
     </script>
 
