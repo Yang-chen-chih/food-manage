@@ -221,8 +221,7 @@
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-circle-notch animate-spin"></i> 處理中...';
-
+           
             const payload = {
                 name: document.getElementById('foodName').value || "未命名食材",
                 date: document.getElementById('foodDate').value || null,
@@ -285,6 +284,7 @@
     </script>
 </body>
 </html>
+
 
 
 
