@@ -42,7 +42,7 @@ const App = () => {
   });
 
   // 主題設計色調
-  const themeColor = "#D9A05B"; // 暖木色
+  const encodedThemeColor = themeColor.replace('#', '%23');
   const secondaryBg = "#FDF8F1";
 
   // 1. 處理身份驗證
@@ -159,14 +159,14 @@ const App = () => {
   );
 
   // 背景圖案 SVG
-  const cozyPattern = `<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g fill="${themeColor}" fill-opacity="0.06"><path d="M20 20c0-5 4-9 9-9s9 4 9 9-4 9-9 9-9-4-9-9zm2 0c0 3.8 3.2 7 7 7s7-3.2 7-7-3.2-7-7-7-7 3.2-7 7z" /><rect x="28" y="32" width="2" height="10" rx="1" /><circle cx="75" cy="75" r="3" /><path d="M70 65l10 10m0-10L70 75" stroke="${themeColor}" stroke-opacity="0.06" stroke-width="1.5" /></g></svg>`;
+  const cozyPattern = `<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g fill="${encodedThemeColor}" fill-opacity="0.06"><path d="M20 20c0-5 4-9 9-9s9 4 9 9-4 9-9 9-9-4-9-9zm2 0c0 3.8 3.2 7 7 7s7-3.2 7-7-3.2-7-7-7-7 3.2-7 7z" /><rect x="28" y="32" width="2" height="10" rx="1" /><circle cx="75" cy="75" r="3" /><path d="M70 65l10 10m0-10L70 75" stroke="${encodedThemeColor}" stroke-opacity="0.06" stroke-width="1.5" /></g></svg>`;
 
   const backgroundStyle = {
     backgroundColor: secondaryBg,
-    backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(cozyPattern)}")`,
+    // 使用新的方式構建 URL，確保編碼正確
+    backgroundImage: `url('data:image/svg+xml;utf8,${cozyPattern}')`,
     backgroundSize: '100px 100px'
   };
-
   return (
     <div className="min-h-screen relative text-[#5C4D3C] font-sans pb-10" style={backgroundStyle}>
       {/* 頁首 */}
@@ -347,3 +347,4 @@ const App = () => {
 };
 
 export default App;
+
