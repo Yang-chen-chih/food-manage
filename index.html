@@ -61,7 +61,7 @@
                         <label class="block text-xs font-medium text-gray-500 mb-1 pl-1">價格</label>
                         <div class="relative">
                             <span class="absolute left-3 top-3.5 text-gray-400 text-sm">$</span>
-                            <input type="number" id="foodPrice" placeholder="輸入金額" step="any"
+                            <input type="text" id="foodPrice" placeholder="輸入金額或備註"
                                 class="w-full pl-8 pr-4 py-3 rounded-xl border border-gray-200 focus-ring">
                         </div>
                     </div>
@@ -192,7 +192,7 @@
             const payload = {
                 name: document.getElementById('foodName').value,
                 date: document.getElementById('foodDate').value,
-                price: parseFloat(document.getElementById('foodPrice').value) || 0,
+                price: document.getElementById('foodPrice').value || "",
                 location: document.getElementById('foodLocation').value,
                 image: currentImageData
             };
@@ -271,7 +271,7 @@
                             </div>
                         </div>
                         <div class="flex justify-between items-end mt-2">
-                            <span class="font-bold theme-text">$\${item.price}</span>
+                            <span class="font-bold theme-text">$\${item.price || '0'}</span>
                             <span class="text-[8px] bg-gray-50 text-gray-400 px-1.5 py-0.5 rounded border border-gray-100">ID: \${item.id}</span>
                         </div>
                     </div>
