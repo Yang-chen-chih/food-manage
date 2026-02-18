@@ -113,7 +113,7 @@
 
     <div id="loadingOverlay">
         <div class="animate-spin rounded-full h-10 w-10 border-4 border-[#D9A05B] border-t-transparent mb-4"></div>
-        <p class="theme-text font-medium text-sm">正在載入廚房...</p>
+        <p class="theme-text font-medium text-sm"更新中</p>
     </div>
 
     <div class="max-w-2xl mx-auto min-h-screen px-4 py-12">
@@ -153,7 +153,7 @@
                 </div>
 
                 <div>
-                    <label class="label-text">備註內容</label>
+                    <label class="label-text">備註</label>
                     <textarea id="foodNote" placeholder="補充說明..." class="custom-input h-20 resize-none"></textarea>
                 </div>
 
@@ -185,7 +185,7 @@
                         class="h-40 border-2 border-dashed border-[#E8DFD0] rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#D9A05B] transition-colors overflow-hidden bg-[#FFFFFF]/50 relative">
                         <div id="uploadPlaceholder" class="text-center">
                             <i class="fas fa-image text-gray-300 text-3xl mb-2"></i>
-                            <p class="text-xs text-gray-400">點擊上傳或使用相機</p>
+                            <p class="text-xs text-gray-400">點擊上傳</p>
                         </div>
                         <img id="imagePreview" src="" class="hidden w-full h-full object-cover">
                     </div>
@@ -395,7 +395,7 @@
                                     <h3 class="font-bold text-gray-700 truncate">${item.name}</h3>
                                     <button onclick="deleteItem(${item.id})" class="text-gray-300 hover:text-red-400 transition-colors pl-2"><i class="fas fa-times"></i></button>
                                 </div>
-                                <div class="text-[13px] text-gray-400 mt-1 flex flex-col gap-1">
+                                <div class="text-[14px] text-gray-400 mt-1 flex flex-col gap-1">
                                     <span><i class="far fa-calendar-alt mr-1"></i>${item.date || '未註記'}</span>
                                     <span><i class="fas fa-map-marker-alt mr-1"></i>${item.location || '未註記'}</span>
                                 </div>
