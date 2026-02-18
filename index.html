@@ -12,7 +12,6 @@
     <style>
         :root { 
             --theme-color: #D9A05B; 
-            /* 調整為更明顯的米色調 */
             --bg-color: #F5EFE6; 
             --card-bg: #FFFBF5;
             --input-border: #E8DFD0;
@@ -29,7 +28,6 @@
         .theme-text { color: var(--theme-color); }
         .theme-bg { background-color: var(--theme-color); }
         
-        /* 標題樣式 */
         .app-title {
             display: flex;
             align-items: center;
@@ -40,7 +38,6 @@
             color: var(--theme-color);
         }
 
-        /* 紮實的卡片設計 - 改為米白色 */
         .solid-card {
             background: var(--card-bg);
             border-radius: 1.5rem;
@@ -48,7 +45,6 @@
             border: 1px solid rgba(217, 160, 91, 0.1);
         }
 
-        /* 輸入框樣式 */
         .custom-input {
             width: 100%;
             padding: 0.75rem 1rem;
@@ -82,13 +78,11 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
 
-        /* 按鈕禁用狀態 */
         button:disabled {
             opacity: 0.7;
             cursor: not-allowed;
         }
 
-        /* 列表卡片微調 */
         .list-card {
             background: var(--card-bg);
             border: 1px solid rgba(217, 160, 91, 0.08);
@@ -96,6 +90,22 @@
         }
         .list-card:active {
             transform: scale(0.98);
+        }
+
+        /* 相機預覽容器 */
+        #cameraContainer {
+            display: none;
+            position: relative;
+            width: 100%;
+            height: 240px;
+            background: #000;
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+        #cameraStream {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
     </style>
 </head>
@@ -113,7 +123,6 @@
             </div>
         </header>
 
-        <!-- 新增區塊 (紮實卡片) -->
         <section class="solid-card p-8 mb-8 animate-fadeIn">
             <h2 class="text-lg font-semibold mb-6 flex items-center gap-2 theme-text">
                 <i class="fas fa-plus-circle"></i> 新增食材
@@ -133,23 +142,50 @@
                         <label class="label-text">價格</label>
                         <div class="relative">
                             <span class="absolute left-3 top-3 text-gray-400">$</span>
-                            <input type="text" id="foodPrice" placeholder="0" class="custom-input pl-7">
+                            <input type="number" id="foodPrice" placeholder="0" class="custom-input pl-7">
                         </div>
                     </div>
                 </div>
 
                 <div>
                     <label class="label-text">存放地方</label>
-                    <input type="text" id="foodLocation" placeholder="點擊輸入" class="custom-input">
+                    <input type="text" id="foodLocation" placeholder="例如：冰箱冷藏室" class="custom-input">
                 </div>
 
                 <div>
-                    <label class="label-text">圖片支援</label>
+                    <label class="label-text">備註內容</label>
+                    <textarea id="foodNote" placeholder="補充說明..." class="custom-input h-20 resize-none"></textarea>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="label-text mb-0">圖片支援</label>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="startCamera()" class="text-xs bg-white border border-[#E8DFD0] px-3 py-1 rounded-full text-gray-500 hover:border-[#D9A05B] hover:text-[#D9A05B] transition-all">
+                                <i class="fas fa-camera mr-1"></i> 開啟相機
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 相機預覽區 -->
+                    <div id="cameraContainer" class="mb-2">
+                        <video id="cameraStream" autoplay playsinline></video>
+                        <div class="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
+                            <button type="button" onclick="takeSnapshot()" class="bg-white text-gray-800 w-12 h-12 rounded-full shadow-lg flex items-center justify-center">
+                                <i class="fas fa-camera text-xl"></i>
+                            </button>
+                            <button type="button" onclick="stopCamera()" class="bg-red-500 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 圖片預覽/上傳點擊區 -->
                     <div id="dropZone" onclick="document.getElementById('imageInput').click()" 
-                        class="h-40 border-2 border-dashed border-[#E8DFD0] rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#D9A05B] transition-colors overflow-hidden bg-[#FFFFFF]/50">
+                        class="h-40 border-2 border-dashed border-[#E8DFD0] rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#D9A05B] transition-colors overflow-hidden bg-[#FFFFFF]/50 relative">
                         <div id="uploadPlaceholder" class="text-center">
-                            <i class="fas fa-camera text-gray-300 text-3xl mb-2"></i>
-                            <p class="text-xs text-gray-400">點擊上傳相片</p>
+                            <i class="fas fa-image text-gray-300 text-3xl mb-2"></i>
+                            <p class="text-xs text-gray-400">點擊上傳或使用相機</p>
                         </div>
                         <img id="imagePreview" src="" class="hidden w-full h-full object-cover">
                     </div>
@@ -157,18 +193,25 @@
                 </div>
 
                 <button type="submit" id="submitBtn" class="w-full theme-bg text-white font-bold py-4 rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4 hover:brightness-105">
-                    <span id="btnText">上傳</span>
+                    <span id="btnText">上傳食材</span>
                     <i id="btnIcon" class="fas fa-cloud-upload-alt"></i>
                 </button>
             </form>
         </section>
 
-        <!-- 列表區塊 -->
+        <div class="mb-6 animate-fadeIn" style="animation-delay: 0.1s;">
+            <div class="relative">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input type="text" id="searchInput" placeholder="搜尋名稱、地點、日期或備註..." 
+                    class="custom-input pl-12 shadow-sm border-none bg-white/80 backdrop-blur-sm">
+            </div>
+        </div>
+
         <div id="foodList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         
         <div id="emptyState" class="hidden py-16 text-center">
             <i class="fas fa-box-open mx-auto text-gray-300 text-5xl mb-3"></i>
-            <p class="text-gray-400 italic text-sm">空空如也</p>
+            <p class="text-gray-400 italic text-sm">找不到相關食材</p>
         </div>
     </div>
 
@@ -179,7 +222,9 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let items = [];
+        let filteredItems = [];
         let currentImageData = null;
+        let stream = null;
 
         const foodForm = document.getElementById('foodForm');
         const imageInput = document.getElementById('imageInput');
@@ -191,6 +236,10 @@
         const submitBtn = document.getElementById('submitBtn');
         const btnText = document.getElementById('btnText');
         const btnIcon = document.getElementById('btnIcon');
+        const searchInput = document.getElementById('searchInput');
+        const cameraContainer = document.getElementById('cameraContainer');
+        const cameraStream = document.getElementById('cameraStream');
+        const dropZone = document.getElementById('dropZone');
 
         async function init() {
             try {
@@ -201,6 +250,7 @@
 
                 if (error) throw error;
                 items = data || [];
+                filteredItems = [...items];
                 renderItems();
                 
                 loadingOverlay.style.opacity = '0';
@@ -210,6 +260,62 @@
                 console.error("Initialization Error:", err);
             }
         }
+
+        // 相機功能
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment" }, 
+                    audio: false 
+                });
+                cameraStream.srcObject = stream;
+                cameraContainer.style.display = 'block';
+                dropZone.style.display = 'none';
+            } catch (err) {
+                alert("無法開啟相機，請檢查瀏覽器權限設置。");
+                console.error(err);
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            cameraContainer.style.display = 'none';
+            dropZone.style.display = 'flex';
+        }
+
+        function takeSnapshot() {
+            const canvas = document.createElement('canvas');
+            canvas.width = cameraStream.videoWidth;
+            canvas.height = cameraStream.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(cameraStream, 0, 0, canvas.width, canvas.height);
+            
+            // 轉為 Base64
+            currentImageData = canvas.toDataURL('image/jpeg', 0.8);
+            imagePreview.src = currentImageData;
+            imagePreview.classList.remove('hidden');
+            uploadPlaceholder.classList.add('hidden');
+            
+            stopCamera();
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            const keyword = e.target.value.toLowerCase().trim();
+            if (!keyword) {
+                filteredItems = [...items];
+            } else {
+                filteredItems = items.filter(item => {
+                    const nameMatch = item.name?.toLowerCase().includes(keyword);
+                    const locationMatch = item.location?.toLowerCase().includes(keyword);
+                    const dateMatch = item.date?.toLowerCase().includes(keyword);
+                    const noteMatch = item.note?.toLowerCase().includes(keyword);
+                    return nameMatch || locationMatch || dateMatch || noteMatch;
+                });
+            }
+            renderItems();
+        });
 
         imageInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -239,8 +345,9 @@
             const payload = {
                 name: document.getElementById('foodName').value || "未命名",
                 date: document.getElementById('foodDate').value || null,
-                price: document.getElementById('foodPrice').value || "0",
+                price: document.getElementById('foodPrice').value || 0,
                 location: document.getElementById('foodLocation').value || "",
+                note: document.getElementById('foodNote').value || "",
                 image: currentImageData
             };
 
@@ -249,7 +356,7 @@
             if (error) {
                 alert("儲存失敗: " + error.message);
                 submitBtn.disabled = false;
-                btnText.textContent = "確認上傳";
+                btnText.textContent = "上傳食材";
                 btnIcon.className = "fas fa-cloud-upload-alt";
             } else {
                 window.location.reload();
@@ -269,33 +376,40 @@
         };
 
         function renderItems() {
-            if (items.length === 0) {
+            if (filteredItems.length === 0) {
                 foodList.innerHTML = '';
                 emptyState.classList.remove('hidden');
                 return;
             }
 
             emptyState.classList.add('hidden');
-            foodList.innerHTML = items.map(item => `
-                <div class="list-card rounded-2xl p-4 shadow-sm flex gap-4 animate-fadeIn">
-                    <div class="w-20 h-20 bg-[#F0EAE0] rounded-xl overflow-hidden flex-shrink-0">
-                        ${item.image ? `<img src="${item.image}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-[#D6C7B1]"><i class="fas fa-utensils"></i></div>`}
-                    </div>
-                    <div class="flex-1 flex flex-col justify-between overflow-hidden">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <h3 class="font-bold text-gray-700 truncate">${item.name}</h3>
-                                <button onclick="deleteItem(${item.id})" class="text-gray-300 hover:text-red-400 transition-colors"><i class="fas fa-times"></i></button>
+            foodList.innerHTML = filteredItems.map(item => `
+                <div class="list-card rounded-2xl p-4 shadow-sm flex flex-col gap-3 animate-fadeIn">
+                    <div class="flex gap-4">
+                        <div class="w-20 h-20 bg-[#F0EAE0] rounded-xl overflow-hidden flex-shrink-0">
+                            ${item.image ? `<img src="${item.image}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-[#D6C7B1]"><i class="fas fa-utensils"></i></div>`}
+                        </div>
+                        <div class="flex-1 flex flex-col justify-between overflow-hidden">
+                            <div>
+                                <div class="flex justify-between items-start">
+                                    <h3 class="font-bold text-gray-700 truncate">${item.name}</h3>
+                                    <button onclick="deleteItem(${item.id})" class="text-gray-300 hover:text-red-400 transition-colors pl-2"><i class="fas fa-times"></i></button>
+                                </div>
+                                <div class="text-[13px] text-gray-400 mt-1 flex flex-col gap-1">
+                                    <span><i class="far fa-calendar-alt mr-1"></i>${item.date || '未註記'}</span>
+                                    <span><i class="fas fa-map-marker-alt mr-1"></i>${item.location || '未註記'}</span>
+                                </div>
                             </div>
-                            <div class="text-[14px] text-gray-400 mt-1 flex flex-wrap gap-x-3">
-                                <span><i class="far fa-calendar-alt mr-1"></i>${item.date || '未註記'}</span>
-                                <span><i class="fas fa-map-marker-alt mr-1"></i>${item.location || '未註記'}</span>
+                            <div class="flex justify-between items-end mt-2">
+                                <span class="font-bold theme-text">$${item.price}</span>
                             </div>
                         </div>
-                        <div class="flex justify-between items-end mt-2">
-                            <span class="font-bold theme-text">$${item.price}</span>
-                        </div>
                     </div>
+                    ${item.note ? `
+                        <div class="mt-1 pt-3 border-t border-gray-100">
+                            <p class="text-[12px] text-gray-500 line-clamp-2 italic"><i class="far fa-sticky-note mr-1 text-gray-300"></i>${item.note}</p>
+                        </div>
+                    ` : ''}
                 </div>
             `).join('');
         }
