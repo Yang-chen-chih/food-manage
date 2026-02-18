@@ -163,10 +163,6 @@ const App = () => {
 
   const backgroundStyle = {
     backgroundColor: secondaryBg,
-    // 使用新的方式構建 URL，確保編碼正確
-    backgroundImage: `url('data:image/svg+xml;utf8,${cozyPattern}')`,
-    backgroundSize: '100px 100px'
-  };
   return (
     <div className="min-h-screen relative text-[#5C4D3C] font-sans pb-10" style={backgroundStyle}>
       {/* 頁首 */}
@@ -347,4 +343,5 @@ const App = () => {
 };
 
 export default App;
+
 
