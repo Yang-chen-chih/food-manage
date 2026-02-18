@@ -7,6 +7,8 @@
     <link rel="icon" href="foodicon.png" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- 引入 Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --theme-color: #D9A05B;
@@ -22,39 +24,52 @@
             outline: none;
             box-shadow: 0 0 0 2px rgba(217, 160, 91, 0.4);
         }
-        /* 優化手機端滾動 */
-        .custom-scroll {
-            -webkit-overflow-scrolling: touch;
-        }
-        /* 隱藏預設 input file */
         #imageInput { display: none; }
+
+        /* 載入中遮罩 */
+        #loadingOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(253, 248, 243, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            transition: opacity 0.3s;
+        }
     </style>
 </head>
 <body class="font-sans text-gray-800">
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-[#D9A05B] border-t-transparent mb-4"></div>
+        <p class="theme-text font-medium">連線至 Supabase...</p>
+    </div>
 
     <div class="max-w-xl mx-auto min-h-screen px-4 py-6 md:py-10">
         <!-- Header -->
         <header class="text-center mb-6">
             <h1 class="text-2xl md:text-3xl font-bold flex justify-center items-center gap-2 theme-text">
-                <i class="fas fa-box-open"></i> 食材管理系統
+                <i class="fas fa-database"></i> 食材雲端管理
             </h1>
+            <p id="connStatus" class="text-[10px] text-gray-400 mt-1 italic">正在連線至雲端資料庫...</p>
         </header>
 
         <!-- 新增食材區塊 -->
         <section class="bg-white rounded-2xl shadow-sm border theme-border p-5 mb-6">
             <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 theme-text">
-                <i class="fas fa-plus-circle text-sm"></i> 新增食材
+                <i class="fas fa-plus-circle text-sm"></i> 新增食材 (Supabase)
             </h2>
             
             <form id="foodForm" class="space-y-4">
-                <!-- 名稱 -->
                 <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1 pl-1">食材名稱</label>
-                    <input type="text" id="foodName" placeholder="例如：日本 A5 和牛" 
+                    <input type="text" id="foodName" placeholder="例如：日本 A5 和牛" required
                         class="w-full px-4 py-3 rounded-xl border border-gray-200 focus-ring transition-all">
                 </div>
 
-                <!-- 日期與價格 -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-medium text-gray-500 mb-1 pl-1">購買日期</label>
@@ -71,14 +86,12 @@
                     </div>
                 </div>
 
-                <!-- 存放地方 -->
                 <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1 pl-1">存放地方</label>
                     <input type="text" id="foodLocation" placeholder="例如：冰箱下層左側" 
                         class="w-full px-4 py-3 rounded-xl border border-gray-200 focus-ring">
                 </div>
 
-                <!-- 圖片上傳區域 -->
                 <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1 pl-1">食材圖片</label>
                     <div id="dropZone" onclick="document.getElementById('imageInput').click()" 
@@ -92,16 +105,15 @@
                     <input type="file" id="imageInput" accept="image/*">
                 </div>
 
-                <button type="submit" 
+                <button type="submit" id="submitBtn"
                     class="w-full theme-bg text-white font-bold py-4 rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-2">
-                    <i class="fas fa-plus"></i> 新增到清單
+                    <i class="fas fa-cloud-upload-alt"></i> 儲存到 Supabase
                 </button>
             </form>
         </section>
 
-        <!-- 整合搜尋與清單的卡片 -->
+        <!-- 搜尋與清單 -->
         <section class="bg-white rounded-2xl shadow-sm border theme-border overflow-hidden mb-10">
-            <!-- 搜尋欄位 (卡片頂部) -->
             <div class="px-4 py-3 border-b border-gray-100 bg-white sticky top-0 z-10">
                 <div class="flex items-center bg-gray-50 rounded-xl px-3 py-2 border border-gray-100 focus-within:border-[#D9A05B] transition-colors">
                     <i class="fas fa-search text-gray-400 mr-2"></i>
@@ -110,21 +122,22 @@
                 </div>
             </div>
 
-            <!-- 食材清單容器 -->
-            <div id="foodList" class="p-4 space-y-4">
-                <!-- 動態生成內容 -->
-            </div>
+            <div id="foodList" class="p-4 space-y-4"></div>
 
-            <!-- 空白狀態提示 -->
             <div id="emptyState" class="hidden py-16 text-center">
-                <p class="theme-text text-lg font-medium mb-4">記錄您的美食地圖</p>
-                <i class="fas fa-box-open mx-auto text-[#EEDCC8] text-5xl mb-3"></i>
-                <p class="text-gray-400 italic text-sm">目前還沒有記錄任何食材</p>
+                <p class="theme-text text-lg font-medium mb-4">雲端同步中</p>
+                <i class="fas fa-wifi mx-auto text-[#EEDCC8] text-5xl mb-3"></i>
+                <p class="text-gray-400 italic text-sm">目前資料庫為空</p>
             </div>
         </section>
     </div>
 
     <script>
+        // --- 請將以下資訊替換為您的 Supabase 專案資訊 ---
+        const SUPABASE_URL = 'https://eqjrudcgmryavwbjaecm.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxanJ1ZGNnbXJ5YXZ3YmphZWNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MjkzODgsImV4cCI6MjA4NzAwNTM4OH0.Tl9UvO41jlRPRmfw-bA6t5s_qMKQjHAfINUJRoRnB4A';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         let items = [];
         let currentImageData = null;
 
@@ -135,7 +148,54 @@
         const foodList = document.getElementById('foodList');
         const emptyState = document.getElementById('emptyState');
         const searchInput = document.getElementById('searchInput');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const connStatus = document.getElementById('connStatus');
 
+        // 初始化並載入資料
+        async function init() {
+            try {
+                const { data, error } = await supabase
+                    .from('foods')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                
+                items = data || [];
+                renderItems();
+                
+                connStatus.textContent = "已連線至 Supabase";
+                loadingOverlay.style.opacity = '0';
+                setTimeout(() => loadingOverlay.style.display = 'none', 300);
+
+                // 訂閱即時更新 (Realtime)
+                supabase
+                    .channel('foods-channel')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'foods' }, payload => {
+                        handleRealtimeUpdate(payload);
+                    })
+                    .subscribe();
+
+            } catch (err) {
+                console.error("Supabase Error:", err.message);
+                connStatus.textContent = "API 金鑰無效，請檢查程式碼中的 URL 與 Key";
+            }
+        }
+
+        // 處理即時同步
+        function handleRealtimeUpdate(payload) {
+            if (payload.eventType === 'INSERT') {
+                items.unshift(payload.new);
+            } else if (payload.eventType === 'DELETE') {
+                items = items.filter(i => i.id !== payload.old.id);
+            } else if (payload.eventType === 'UPDATE') {
+                const idx = items.findIndex(i => i.id === payload.new.id);
+                if (idx !== -1) items[idx] = payload.new;
+            }
+            renderItems();
+        }
+
+        // 圖片預覽
         imageInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -150,43 +210,51 @@
             }
         });
 
-        foodForm.addEventListener('submit', function(e) {
+        // 新增食材
+        foodForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            
-            const newItem = {
-                id: Date.now(),
-                name: document.getElementById('foodName').value || '未命名食材',
-                date: document.getElementById('foodDate').value || '未填寫日期',
-                price: document.getElementById('foodPrice').value || '0',
-                location: document.getElementById('foodLocation').value || '未標註地點',
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> 同步中...';
+
+            const newFood = {
+                name: document.getElementById('foodName').value,
+                date: document.getElementById('foodDate').value,
+                price: parseFloat(document.getElementById('foodPrice').value) || 0,
+                location: document.getElementById('foodLocation').value,
                 image: currentImageData
             };
 
-            items.unshift(newItem);
-            resetForm();
-            renderItems();
+            const { error } = await supabase.from('foods').insert([newFood]);
+
+            if (error) {
+                console.error("Insert Error:", error.message);
+                alert("儲存失敗: " + error.message);
+            } else {
+                foodForm.reset();
+                currentImageData = null;
+                imagePreview.classList.add('hidden');
+                uploadPlaceholder.classList.remove('hidden');
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> 儲存到 Supabase';
         });
 
-        function resetForm() {
-            foodForm.reset();
-            currentImageData = null;
-            imagePreview.src = "";
-            imagePreview.classList.add('hidden');
-            uploadPlaceholder.classList.remove('hidden');
-        }
-
-        function deleteItem(id) {
-            items = items.filter(item => item.id !== id);
-            renderItems();
-        }
+        // 刪除食材
+        window.deleteItem = async (id) => {
+            if (!confirm('確定要從雲端刪除嗎？')) return;
+            const { error } = await supabase.from('foods').delete().eq('id', id);
+            if (error) console.error("Delete Error:", error.message);
+        };
 
         searchInput.addEventListener('input', renderItems);
 
         function renderItems() {
             const keyword = searchInput.value.toLowerCase();
             const filteredItems = items.filter(item => 
-                item.name.toLowerCase().includes(keyword) || 
-                item.location.toLowerCase().includes(keyword)
+                (item.name || '').toLowerCase().includes(keyword) || 
+                (item.location || '').toLowerCase().includes(keyword)
             );
 
             if (filteredItems.length === 0) {
@@ -214,23 +282,23 @@
                             </div>
                             <div class="mt-0.5 space-y-0.5 text-[10px] md:text-xs text-gray-500">
                                 <div class="flex items-center gap-1">
-                                    <i class="far fa-calendar-alt theme-text scale-75"></i> ${item.date}
+                                    <i class="far fa-calendar-alt theme-text scale-75"></i> ${item.date || '未註記'}
                                 </div>
                                 <div class="flex items-center gap-1">
-                                    <i class="fas fa-location-dot theme-text scale-75"></i> ${item.location}
+                                    <i class="fas fa-location-dot theme-text scale-75"></i> ${item.location || '未註記'}
                                 </div>
                             </div>
                         </div>
                         <div class="flex justify-between items-end mt-1">
                             <span class="font-bold text-sm md:text-base theme-text">$${item.price}</span>
-                            <span class="bg-[#FAF0E6] text-[#D9A05B] text-[9px] px-2 py-0.5 rounded-full font-medium border theme-border">在庫</span>
+                            <span class="bg-[#FAF0E6] text-[#D9A05B] text-[9px] px-2 py-0.5 rounded-full font-medium border theme-border">Supabase</span>
                         </div>
                     </div>
                 </div>
             `).join('');
         }
 
-        renderItems();
+        init();
     </script>
 
     <style>
