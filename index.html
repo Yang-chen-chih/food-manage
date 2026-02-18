@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, X, MapPin, Calendar, Tag, Package, Loader2, Trash2, Image as ImageIcon, Upload, Search } from 'lucide-react';
+import { Plus, X, MapPin, Calendar, Tag, Package, Loader2, Trash2, Image as ImageIcon, Search } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { getFirestore, doc, collection, onSnapshot, addDoc, deleteDoc } from 'firebase/firestore';
 
-// 確保 Firebase Config 存在
+// --- Firebase 配置與初始化 ---
 const getFirebaseConfig = () => {
   try {
     return JSON.parse(__firebase_config);
@@ -19,6 +19,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'food-management-app-v2';
+
+// 預設圖片常數
+const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=300&q=80";
 
 const App = () => {
   const [items, setItems] = useState([]);
@@ -38,8 +41,8 @@ const App = () => {
     imageFile: null
   });
 
-  // 主題色：暖木色
-  const themeColor = "#D9A05B"; 
+  // 主題設計色調
+  const themeColor = "#D9A05B"; // 暖木色
   const secondaryBg = "#FDF8F1";
 
   // 1. 處理身份驗證
@@ -56,31 +59,32 @@ const App = () => {
         console.error("Auth error:", error);
       }
     };
-    
+
     initAuth();
-    
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (isMounted) setUser(currentUser);
     });
-    
+
     return () => {
       isMounted = false;
       unsubscribe();
     };
   }, []);
 
-  // 2. 監聽資料
+  // 2. 實時監聽資料庫
   useEffect(() => {
     if (!user) return;
 
     const collectionPath = collection(db, 'artifacts', appId, 'public', 'data', 'foodItems');
-    
-    const unsubscribe = onSnapshot(collectionPath, 
+
+    const unsubscribe = onSnapshot(collectionPath,
       (snapshot) => {
         const fetchedItems = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+        // 依照建立時間排序
         const sortedItems = fetchedItems.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         setItems(sortedItems);
         setIsInitialLoading(false);
@@ -94,6 +98,7 @@ const App = () => {
     return () => unsubscribe();
   }, [user]);
 
+  // --- 處理函式 ---
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -111,21 +116,19 @@ const App = () => {
     if (!user || isLoading) return;
     setIsLoading(true);
 
-    const fallbackImg = "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=300&q=80";
-
     try {
       const itemData = {
         name: newItem.name || '未命名食材',
         date: newItem.date || '未標記日期',
         price: newItem.price || '0',
         location: newItem.location || '未指定',
-        imageUrl: newItem.imageFile || fallbackImg,
+        imageUrl: newItem.imageFile || FALLBACK_IMAGE,
         createdAt: Date.now(),
         creatorId: user.uid
       };
 
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'foodItems'), itemData);
-      
+
       setIsLoading(false);
       setIsModalOpen(false);
       resetForm();
@@ -142,6 +145,7 @@ const App = () => {
 
   const deleteItem = async (id) => {
     if (!user) return;
+    if (!window.confirm("確定要刪除這項食材嗎？")) return;
     try {
       await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'foodItems', id));
     } catch (error) {
@@ -149,12 +153,12 @@ const App = () => {
     }
   };
 
-  const filteredItems = items.filter(item => 
+  const filteredItems = items.filter(item =>
     (item.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (item.location || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // 背景圖案編碼處理
+  // 背景圖案 SVG
   const cozyPattern = `<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g fill="${themeColor}" fill-opacity="0.06"><path d="M20 20c0-5 4-9 9-9s9 4 9 9-4 9-9 9-9-4-9-9zm2 0c0 3.8 3.2 7 7 7s7-3.2 7-7-3.2-7-7-7-7 3.2-7 7z" /><rect x="28" y="32" width="2" height="10" rx="1" /><circle cx="75" cy="75" r="3" /><path d="M70 65l10 10m0-10L70 75" stroke="${themeColor}" stroke-opacity="0.06" stroke-width="1.5" /></g></svg>`;
 
   const backgroundStyle = {
@@ -165,16 +169,17 @@ const App = () => {
 
   return (
     <div className="min-h-screen relative text-[#5C4D3C] font-sans pb-10" style={backgroundStyle}>
+      {/* 頁首 */}
       <header className="bg-white/80 backdrop-blur-xl border-b sticky top-0 z-10 px-6 py-5 shadow-sm border-[#D9A05B]/10">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-4 justify-between items-center">
           <h1 className="text-2xl font-black tracking-tight" style={{ color: themeColor }}>
             家裡的食材管理
           </h1>
-          
+
           <div className="flex items-center gap-3 w-full md:w-auto">
             <div className="relative flex-1 md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2" size={18} style={{ color: themeColor }} />
-              <input 
+              <input
                 type="text"
                 placeholder="搜尋食材或地點..."
                 value={searchTerm}
@@ -182,8 +187,8 @@ const App = () => {
                 className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-[#D9A05B]/20 focus:bg-white focus:ring-4 focus:ring-[#D9A05B]/10 rounded-full outline-none transition-all text-sm focus:border-[#D9A05B]"
               />
             </div>
-            
-            <button 
+
+            <button
               onClick={() => setIsModalOpen(true)}
               style={{ backgroundColor: themeColor }}
               className="hover:opacity-90 text-white p-2.5 rounded-full transition-all transform hover:scale-105 shadow-lg flex items-center justify-center shrink-0"
@@ -194,6 +199,7 @@ const App = () => {
         </div>
       </header>
 
+      {/* 主要內容區 */}
       <main className="max-w-6xl mx-auto p-6">
         {isInitialLoading ? (
           <div className="flex flex-col items-center justify-center py-44">
@@ -204,23 +210,23 @@ const App = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {filteredItems.map((item) => (
               <div key={item.id} className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 group relative border border-[#D9A05B]/5">
-                <button 
+                <button
                   onClick={() => deleteItem(item.id)}
                   className="absolute top-4 right-4 z-10 bg-white/90 hover:bg-red-50 text-red-400 p-2.5 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md"
                 >
                   <Trash2 size={16} />
                 </button>
-                
+
                 <div className="h-52 overflow-hidden bg-[#F9F4EE]">
-                  <img 
-                    src={item.imageUrl} 
-                    alt={item.name} 
+                  <img
+                    src={item.imageUrl}
+                    alt={item.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     loading="lazy"
-                    onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=300&q=80"; }}
+                    onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
                   />
                 </div>
-                
+
                 <div className="p-7">
                   <h3 className="text-xl font-bold mb-5 truncate text-[#4A3B2A]">{item.name}</h3>
                   <div className="space-y-4 text-sm text-[#7D6E5D]">
@@ -248,7 +254,7 @@ const App = () => {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-44 animate-in fade-in slide-in-from-bottom-6">
+          <div className="flex flex-col items-center justify-center py-44">
             <div className="p-10 rounded-[3.5rem] bg-white/60 backdrop-blur-md mb-8 border border-white shadow-xl">
               <Package size={100} className="opacity-20" style={{ color: themeColor }} />
             </div>
@@ -259,20 +265,21 @@ const App = () => {
         )}
       </main>
 
+      {/* 新增食材彈窗 */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-[#4A3B2A]/40 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-[3rem] w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-200 overflow-hidden border border-white/50">
+          <div className="bg-white rounded-[3rem] w-full max-w-md shadow-2xl overflow-hidden border border-white/50">
             <div className="p-8 border-b flex justify-between items-center bg-[#FDF8F1]">
               <h2 className="text-2xl font-black text-[#4A3B2A]">新增食材</h2>
               <button onClick={() => { setIsModalOpen(false); resetForm(); }} className="text-slate-400 p-2 hover:bg-white rounded-full transition-all">
                 <X size={24} />
               </button>
             </div>
-            
+
             <form onSubmit={handleAddItem} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
               <div>
-                <label className="block text-xs font-black text-[#4A3B2A] mb-3 opacity-60">食材照片</label>
-                <div 
+                <label className="block text-xs font-black text-[#4A3B2A] mb-3 opacity-60 uppercase">食材照片</label>
+                <div
                   onClick={() => fileInputRef.current.click()}
                   className="relative h-48 border-2 border-dashed border-[#D9A05B]/30 rounded-[2rem] flex flex-col items-center justify-center bg-[#FDF8F1]/50 hover:bg-white hover:border-[#D9A05B] transition-all cursor-pointer overflow-hidden"
                 >
@@ -289,42 +296,43 @@ const App = () => {
               </div>
 
               <div className="space-y-4">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={newItem.name}
-                  onChange={(e) => setNewItem({...newItem, name: e.target.value})}
+                  onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
                   className="w-full px-5 py-4 bg-[#FDF8F1] border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-[#D9A05B]/20 outline-none font-bold"
                   placeholder="食材名稱"
+                  required
                 />
-                
+
                 <div className="grid grid-cols-2 gap-4">
-                  <input 
-                    type="date" 
+                  <input
+                    type="date"
                     value={newItem.date}
-                    onChange={(e) => setNewItem({...newItem, date: e.target.value})}
+                    onChange={(e) => setNewItem({ ...newItem, date: e.target.value })}
                     className="w-full px-5 py-4 bg-[#FDF8F1] border-transparent rounded-2xl focus:bg-white outline-none font-bold"
                   />
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={newItem.price}
-                    onChange={(e) => setNewItem({...newItem, price: e.target.value})}
+                    onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
                     className="w-full px-5 py-4 bg-[#FDF8F1] border-transparent rounded-2xl focus:bg-white outline-none font-bold"
                     placeholder="價格 (NT$)"
                   />
                 </div>
-                
-                <input 
-                  type="text" 
+
+                <input
+                  type="text"
                   value={newItem.location}
-                  onChange={(e) => setNewItem({...newItem, location: e.target.value})}
+                  onChange={(e) => setNewItem({ ...newItem, location: e.target.value })}
                   className="w-full px-5 py-4 bg-[#FDF8F1] border-transparent rounded-2xl focus:bg-white outline-none font-bold"
-                  placeholder="存放位置 (如：冷藏)"
+                  placeholder="存放位置 (如：冷藏、櫥櫃)"
                 />
               </div>
 
-              <button 
+              <button
                 disabled={isLoading}
-                type="submit" 
+                type="submit"
                 style={{ backgroundColor: themeColor }}
                 className="w-full text-white font-black text-lg py-5 rounded-2xl transition-all shadow-lg active:scale-[0.98] disabled:opacity-50"
               >
