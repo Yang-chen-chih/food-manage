@@ -14,7 +14,7 @@
             --bg-color: #F5EFE6; 
             --card-bg: #FFFBF5;
             --input-border: #E8DFD0;
-            --text-muted: #8E8171; /* 加深一點點，提升手機閱讀對比度 */
+            --text-muted: #8E8171; 
             --text-main: #4A443C;
         } 
         
@@ -23,7 +23,7 @@
             background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.6) 0%, transparent 80%);
             background-attachment: fixed;
             color: var(--text-main);
-            -webkit-tap-highlight-color: transparent; /* 移除手機點擊藍色框 */
+            -webkit-tap-highlight-color: transparent; 
         }
 
         .theme-text { color: var(--theme-color); }
@@ -33,7 +33,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
             font-size: 1.75rem;
             font-weight: 800;
             color: var(--theme-color);
@@ -49,18 +49,59 @@
 
         .custom-input {
             width: 100%;
-            padding: 0.875rem 1rem; /* 手機端增加內距，更好點擊 */
+            padding: 0.875rem 1rem; 
             border-radius: 0.75rem;
             border: 1.5px solid var(--input-border);
             background: #FFFFFF;
             transition: all 0.2s ease;
             outline: none;
-            font-size: 16px; /* 防止 iOS 縮放 */
+            font-size: 16px; 
         }
         
         .custom-input:focus {
             border-color: var(--theme-color);
             box-shadow: 0 0 0 3px rgba(217, 160, 91, 0.1);
+        }
+
+        /* 搜尋框樣式 */
+        .search-container {
+            position: relative;
+            background: #FFFFFF;
+            border-radius: 1.25rem;
+            box-shadow: 0 4px 12px rgba(139, 115, 85, 0.1);
+            border: 2px solid rgba(217, 160, 91, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .search-container:focus-within {
+            border-color: var(--theme-color);
+            box-shadow: 0 6px 15px rgba(217, 160, 91, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1.25rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--theme-color);
+            font-size: 1.1rem;
+            font-weight: 900;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3.25rem;
+            border-radius: 1rem;
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 1rem;
+            color: var(--text-main);
+        }
+
+        .search-input::placeholder {
+            color: #BCB0A1;
         }
 
         .label-text {
@@ -93,7 +134,6 @@
             background: #FDF8F0;
         }
 
-        /* 列表優化：資訊視覺分層 */
         .info-tag {
             display: flex;
             align-items: center;
@@ -126,7 +166,8 @@
     <div class="max-w-xl mx-auto min-h-screen px-5 py-8">
         <header class="text-center mb-8">
             <div class="app-title">
-                <i class="fas fa-cookie-bite"></i> 食材小管家
+                <!-- 頂部保持胡蘿蔔圖示 -->
+                <i class="fas fa-carrot"></i> 食材小管家
             </div>
         </header>
 
@@ -204,26 +245,27 @@
             </form>
         </section>
 
+        <!-- 搜尋欄位 - 圖示改回搜尋放大鏡 -->
         <div class="mb-6 animate-fadeIn" style="animation-delay: 0.1s;">
-            <div class="relative group">
-                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-orange-300 group-focus-within:text-[#D9A05B] transition-colors"></i>
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
                 <input type="text" id="searchInput" placeholder="搜尋食材、存放地方、日期或備註..." 
-                    class="custom-input pl-12 shadow-md border-none bg-white/90 backdrop-blur-md placeholder:text-gray-300">
+                    class="search-input">
             </div>
         </div>
 
         <div id="foodList" class="space-y-4"></div>
         
+        <!-- 空白狀態 - 配合搜尋意象，使用箱子 -->
         <div id="emptyState" class="hidden py-20 text-center">
-            <div class="bg-orange-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-search text-orange-200 text-3xl"></i>
+            <div class="bg-orange-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 border border-orange-100">
+                <i class="fas fa-box-open text-orange-200 text-3xl"></i>
             </div>
-            <p class="text-gray-400 font-medium">空空如也>_<</p>
+            <p class="text-gray-400 font-medium">倉庫空空如也 >_<</p>
         </div>
     </div>
 
     <script>
-        // JS 邏輯保持一致，僅對 UI 渲染部分進行優化
         const SUPABASE_URL = 'https://eqjrudcgmryavwbjaecm.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxanJ1ZGNnbXJ5YXZ3YmphZWNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MjkzODgsImV4cCI6MjA4NzAwNTM4OH0.Tl9UvO41jlRPRmfw-bA6t5s_qMKQjHAfINUJRoRnB4A';
 
@@ -345,8 +387,8 @@
             if (error) {
                 alert("儲存失敗: " + error.message);
                 submitBtn.disabled = false;
-                btnText.textContent = "上傳食材";
-                btnIcon.className = "fas fa-cloud-upload-alt";
+                btnText.textContent = "確認上傳";
+                btnIcon.className = "fas fa-check-circle";
             } else {
                 window.location.reload();
             }
@@ -409,4 +451,3 @@
     </script>
 </body>
 </html>
-
