@@ -1,285 +1,54 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>食材管理系統</title>
-    <link rel="icon" href="foodicon.png" type="image/png">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- 引入 Supabase JS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        :root { --theme-color: #D9A05B; }
-        body { background-color: #FDF8F3; -webkit-tap-highlight-color: transparent; }
-        .theme-text { color: var(--theme-color); }
-        .theme-bg { background-color: var(--theme-color); }
-        .theme-border { border-color: #EEDCC8; }
-        .focus-ring:focus { outline: none; box-shadow: 0 0 0 2px rgba(217, 160, 91, 0.4); }
-        #imageInput { display: none; }
-        #loadingOverlay {
-            position: fixed; inset: 0; background: rgba(253, 248, 243, 0.98);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 50; transition: opacity 0.4s;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
-    </style>
-</head>
-<body class="font-sans text-gray-800">
+// ... 前面 Supabase 初始化與事件監聽保持不變 ...
 
-    <div id="loadingOverlay">
-        <div id="loadingSpinner" class="animate-spin rounded-full h-12 w-12 border-4 border-[#D9A05B] border-t-transparent mb-4"></div>
-        <p id="loadingText" class="theme-text font-medium text-center px-4">已連線至雲端資料庫</p>
-        <button id="retryBtn" onclick="location.reload()" class="hidden mt-6 px-6 py-2 bg-[#D9A05B] text-white rounded-lg text-sm shadow-md font-bold">重新整理</button>
-    </div>
+function renderItems() {
+    const kw = searchInput.value.toLowerCase();
+    const filtered = items.filter(i => 
+        (i.name || '').toLowerCase().includes(kw) || 
+        (i.location || '').toLowerCase().includes(kw)
+    );
+    
+    if (filtered.length === 0) {
+        foodList.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+    }
 
-    <div class="max-w-xl mx-auto min-h-screen px-4 py-6 md:py-10">
-        <header class="text-center mb-6">
-            <h1 class="text-2xl md:text-3xl font-bold flex justify-center items-center gap-2 theme-text">
-                <i class="fas fa-apple-whole"></i> 食材管理
-            </h1>
-        </header>
+    emptyState.classList.add('hidden');
+    
+    // 修復重點：這裡的樣板字串改為直接引用變數，避免混淆
+    foodList.innerHTML = filtered.map(item => {
+        // 先處理圖片的 HTML 內容
+        const imageHtml = item.image 
+            ? `<img src="${item.image}" class="w-full h-full object-cover">` 
+            : `<div class="w-full h-full flex items-center justify-center text-[#EEDCC8]"><i class="fas fa-carrot text-xl"></i></div>`;
 
-        <!-- 新增區塊 -->
-        <section class="bg-white rounded-2xl shadow-sm border theme-border p-5 mb-6">
-            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 theme-text">
-                <i class="fas fa-plus-circle text-sm"></i> 新增食材
-            </h2>
-            <form id="foodForm" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1 pl-1">食材名稱</label>
-                    <input type="text" id="foodName" placeholder="例如：日本 A5 和牛" required
-                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus-ring transition-all">
+        // 返回完整的卡片 HTML
+        return `
+            <div class="bg-white rounded-xl p-3 shadow-sm border theme-border flex gap-3 animate-fadeIn">
+                <div class="w-16 h-16 md:w-20 md:h-20 bg-[#F9F3EE] rounded-lg overflow-hidden flex-shrink-0">
+                    ${imageHtml}
                 </div>
-                <div class="grid grid-cols-2 gap-3">
+                <div class="flex-1 overflow-hidden flex flex-col justify-between">
                     <div>
-                        <label class="block text-xs font-medium text-gray-500 mb-1 pl-1">購買日期</label>
-                        <input type="date" id="foodDate" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus-ring">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-500 mb-1 pl-1">價格</label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-3.5 text-gray-400 text-sm">$</span>
-                            <input type="text" id="foodPrice" placeholder="輸入金額或備註"
-                                class="w-full pl-8 pr-4 py-3 rounded-xl border border-gray-200 focus-ring">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-gray-800 text-sm md:text-base truncate pr-2">${item.name}</h3>
+                            <button onclick="deleteItem(${item.id})" class="text-gray-300 hover:text-red-500 transition-colors p-1">
+                                <i class="fas fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                        <div class="text-[10px] md:text-xs text-gray-500 space-y-0.5 mt-1">
+                            <div><i class="far fa-calendar-alt theme-text mr-1"></i> ${item.date || '未註記'}</div>
+                            <div class="truncate"><i class="fas fa-location-dot theme-text mr-1"></i> ${item.location || '未註記'}</div>
                         </div>
                     </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1 pl-1">存放地方</label>
-                    <input type="text" id="foodLocation" placeholder="例如：冰箱下層左側" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus-ring">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1 pl-1">食材圖片</label>
-                    <div id="dropZone" onclick="document.getElementById('imageInput').click()" 
-                        class="h-32 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#D9A05B] transition-colors overflow-hidden bg-gray-50">
-                        <div id="uploadPlaceholder" class="text-center">
-                            <i class="fas fa-camera text-gray-300 text-2xl mb-1"></i>
-                            <p class="text-xs text-gray-400">點擊上傳圖片</p>
-                        </div>
-                        <img id="imagePreview" src="" class="hidden w-full h-full object-cover">
+                    <div class="flex justify-between items-end mt-2">
+                        <span class="font-bold theme-text">$${item.price || '0'}</span>
+                        <span class="text-[8px] bg-gray-50 text-gray-400 px-1.5 py-0.5 rounded border border-gray-100">ID: ${item.id}</span>
                     </div>
-                    <input type="file" id="imageInput" accept="image/*">
-                </div>
-                <button type="submit" id="submitBtn" class="w-full theme-bg text-white font-bold py-4 rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-2">
-                    <i class="fas fa-plus mr-1"></i> 新增食材
-                </button>
-            </form>
-        </section>
-
-        <!-- 搜尋與清單 -->
-        <section class="bg-white rounded-2xl shadow-sm border theme-border overflow-hidden mb-10">
-            <div class="px-4 py-3 border-b border-gray-100 bg-white sticky top-0 z-10">
-                <div class="flex items-center bg-gray-50 rounded-xl px-3 py-2 border border-gray-100 focus-within:border-[#D9A05B] transition-colors">
-                    <i class="fas fa-search text-gray-400 mr-2"></i>
-                    <input type="text" id="searchInput" placeholder="搜尋名稱或存放地點..." class="w-full bg-transparent outline-none text-sm text-gray-600">
                 </div>
             </div>
-            <div id="foodList" class="p-4 space-y-4"></div>
-            <div id="emptyState" class="hidden py-16 text-center">
-                <i class="fas fa-leaf mx-auto text-[#EEDCC8] text-5xl mb-3"></i>
-                <p class="text-gray-400 italic text-sm">目前還沒有記錄任何食材</p>
-            </div>
-        </section>
-    </div>
+        `;
+    }).join('');
+}
 
-    <script>
-        const SUPABASE_URL = 'https://eqjrudcgmryavwbjaecm.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxanJ1ZGNnbXJ5YXZ3YmphZWNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MjkzODgsImV4cCI6MjA4NzAwNTM4OH0.Tl9UvO41jlRPRmfw-bA6t5s_qMKQjHAfINUJRoRnB4A';
-
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        let items = [];
-        let currentImageData = null;
-
-        const foodForm = document.getElementById('foodForm');
-        const imageInput = document.getElementById('imageInput');
-        const imagePreview = document.getElementById('imagePreview');
-        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
-        const foodList = document.getElementById('foodList');
-        const emptyState = document.getElementById('emptyState');
-        const searchInput = document.getElementById('searchInput');
-        const loadingOverlay = document.getElementById('loadingOverlay');
-
-        async function init() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('foods')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-
-                items = data || [];
-                renderItems();
-                
-                loadingOverlay.style.opacity = '0';
-                setTimeout(() => loadingOverlay.style.display = 'none', 400);
-
-                supabaseClient
-                    .channel('public-foods')
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'foods' }, payload => {
-                        if (payload.eventType === 'INSERT') {
-                            items.unshift(payload.new);
-                        } else if (payload.eventType === 'DELETE') {
-                            items = items.filter(i => i.id !== payload.old.id);
-                        } else if (payload.eventType === 'UPDATE') {
-                            const idx = items.findIndex(i => i.id === payload.new.id);
-                            if (idx !== -1) items[idx] = payload.new;
-                        }
-                        renderItems();
-                    })
-                    .subscribe();
-
-            } catch (err) {
-                console.error("Supabase Error:", err);
-                document.getElementById('loadingOverlay').innerHTML = `
-                    <div class="text-center p-8">
-                        <span class="text-red-500 font-bold">同步失敗</span><br>
-                        <span class="text-xs text-gray-500">\${err.message}</span>
-                        <button onclick="location.reload()" class="mt-6 block mx-auto px-6 py-2 bg-[#D9A05B] text-white rounded-lg text-sm shadow-md font-bold">重新整理</button>
-                    </div>
-                `;
-            }
-        }
-
-        imageInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                if (file.size > 1.2 * 1024 * 1024) { 
-                    alert("圖片請限制在 1MB 以內喔！"); 
-                    this.value = ""; 
-                    return; 
-                }
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    currentImageData = ev.target.result;
-                    imagePreview.src = currentImageData;
-                    imagePreview.classList.remove('hidden');
-                    uploadPlaceholder.classList.add('hidden');
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        foodForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> 正在同步...';
-
-            const payload = {
-                name: document.getElementById('foodName').value,
-                date: document.getElementById('foodDate').value,
-                price: document.getElementById('foodPrice').value || "",
-                location: document.getElementById('foodLocation').value,
-                image: currentImageData
-            };
-
-            const { error } = await supabaseClient.from('foods').insert([payload]);
-
-            if (error) {
-                alert("儲存失敗: " + error.message);
-            } else {
-                foodForm.reset();
-                currentImageData = null;
-                imagePreview.classList.add('hidden');
-                uploadPlaceholder.classList.remove('hidden');
-            }
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-plus mr-1"></i> 新增食材';
-        });
-
-        window.deleteItem = async (id) => {
-            const modal = document.createElement('div');
-            modal.className = "fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4";
-            modal.innerHTML = `
-                <div class="bg-white rounded-2xl p-6 w-full max-w-xs text-center shadow-xl">
-                    <p class="font-bold mb-4">確定要刪除嗎？</p>
-                    <div class="flex gap-3">
-                        <button id="cancelDel" class="flex-1 py-2 rounded-lg bg-gray-100 text-gray-500 font-bold">取消</button>
-                        <button id="confirmDel" class="flex-1 py-2 rounded-lg bg-red-500 text-white font-bold">刪除</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            
-            document.getElementById('cancelDel').onclick = () => { modal.remove(); };
-            document.getElementById('confirmDel').onclick = async () => {
-                modal.remove();
-                const { error } = await supabaseClient.from('foods').delete().eq('id', id);
-                if (error) alert("刪除失敗: " + error.message);
-            };
-        };
-
-        searchInput.addEventListener('input', renderItems);
-
-        function renderItems() {
-            const kw = searchInput.value.toLowerCase();
-            const filtered = items.filter(i => 
-                (i.name||'').toLowerCase().includes(kw) || 
-                (i.location||'').toLowerCase().includes(kw)
-            );
-            
-            if (filtered.length === 0) {
-                foodList.innerHTML = '';
-                emptyState.classList.remove('hidden');
-                return;
-            }
-
-            emptyState.classList.add('hidden');
-            foodList.innerHTML = filtered.map(item => `
-                <div class="bg-white rounded-xl p-3 shadow-sm border theme-border flex gap-3 animate-fadeIn">
-                    <div class="w-16 h-16 md:w-20 md:h-20 bg-[#F9F3EE] rounded-lg overflow-hidden flex-shrink-0">
-                        \${item.image ? 
-                            \`<img src="\${item.image}" class="w-full h-full object-cover">\` : 
-                            \`<div class="w-full h-full flex items-center justify-center text-[#EEDCC8]"><i class="fas fa-carrot text-xl"></i></div>\`
-                        }
-                    </div>
-                    <div class="flex-1 overflow-hidden flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <h3 class="font-bold text-gray-800 text-sm md:text-base truncate pr-2">\${item.name}</h3>
-                                <button onclick="deleteItem(\${item.id})" class="text-gray-300 hover:text-red-500 transition-colors p-1">
-                                    <i class="fas fa-trash-can text-xs"></i>
-                                </button>
-                            </div>
-                            <div class="text-[10px] md:text-xs text-gray-500 space-y-0.5 mt-1">
-                                <div><i class="far fa-calendar-alt theme-text mr-1"></i> \${item.date || '未註記'}</div>
-                                <div class="truncate"><i class="fas fa-location-dot theme-text mr-1"></i> \${item.location || '未註記'}</div>
-                            </div>
-                        </div>
-                        <div class="flex justify-between items-end mt-2">
-                            <span class="font-bold theme-text">$\${item.price || '0'}</span>
-                            <span class="text-[8px] bg-gray-50 text-gray-400 px-1.5 py-0.5 rounded border border-gray-100">ID: \${item.id}</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        init();
-    </script>
-</body>
-</html>
+init();
