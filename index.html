@@ -131,17 +131,17 @@
                 </div>
 
                 <div>
-                    <label class="label-text">圖片支援</label>
+                    <label class="label-text">圖片支援 (可選擇拍照或上傳)</label>
                     <div id="dropZone" onclick="document.getElementById('imageInput').click()" 
                         class="h-40 border-2 border-dashed border-gray-100 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#D9A05B] transition-colors overflow-hidden bg-gray-50/50">
                         <div id="uploadPlaceholder" class="text-center">
                             <i class="fas fa-camera text-gray-300 text-3xl mb-2"></i>
-                            <p class="text-xs text-gray-400">點擊上傳或拍照</p>
+                            <p class="text-xs text-gray-400">點擊選擇相片或拍照</p>
                         </div>
                         <img id="imagePreview" src="" class="hidden w-full h-full object-cover">
                     </div>
-                    <!-- 添加 capture="environment" 以在行動裝置開啟後置相機 -->
-                    <input type="file" id="imageInput" accept="image/*" capture="environment">
+                    <!-- 移除 capture 屬性，讓瀏覽器顯示原生選擇選單 -->
+                    <input type="file" id="imageInput" accept="image/*">
                 </div>
 
                 <button type="submit" id="submitBtn" class="w-full theme-bg text-white font-bold py-4 rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4 hover:brightness-105">
@@ -245,7 +245,7 @@
             btnIcon.className = "fas fa-spinner fa-spin";
             
             const payload = {
-                name: document.getElementById('foodName').value || "未命名",
+                name: document.getElementById('foodName').value || "未命名食材",
                 date: document.getElementById('foodDate').value || null,
                 price: document.getElementById('foodPrice').value || "0",
                 location: document.getElementById('foodLocation').value || "",
