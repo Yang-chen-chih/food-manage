@@ -37,7 +37,6 @@
             <h1 class="text-2xl md:text-3xl font-bold flex justify-center items-center gap-2 theme-text">
                 <i class="fas fa-box-open"></i> 食材管理系統
             </h1>
-            <p class="text-gray-500 text-sm mt-1">記錄您的美食地圖</p>
         </header>
 
         <!-- 新增食材區塊 -->
@@ -99,23 +98,29 @@
             </form>
         </section>
 
-        <!-- 搜尋欄位 -->
-        <div class="sticky top-4 z-10 mb-6 flex items-center bg-white/90 backdrop-blur rounded-xl shadow-sm border border-gray-100 px-4 py-3">
-            <i class="fas fa-search text-gray-400 mr-2"></i>
-            <input type="text" id="searchInput" placeholder="搜尋名稱或存放地點..." 
-                class="w-full bg-transparent outline-none text-sm text-gray-600">
-        </div>
+        <!-- 整合搜尋與清單的卡片 -->
+        <section class="bg-white rounded-2xl shadow-sm border theme-border overflow-hidden mb-10">
+            <!-- 搜尋欄位 (卡片頂部) -->
+            <div class="px-4 py-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+                <div class="flex items-center bg-gray-50 rounded-xl px-3 py-2 border border-gray-100 focus-within:border-[#D9A05B] transition-colors">
+                    <i class="fas fa-search text-gray-400 mr-2"></i>
+                    <input type="text" id="searchInput" placeholder="搜尋名稱或存放地點..." 
+                        class="w-full bg-transparent outline-none text-sm text-gray-600">
+                </div>
+            </div>
 
-        <!-- 食材清單容器 -->
-        <div id="foodList" class="space-y-4 pb-20">
-            <!-- 動態生成內容 -->
-        </div>
+            <!-- 食材清單容器 -->
+            <div id="foodList" class="p-4 space-y-4">
+                <!-- 動態生成內容 -->
+            </div>
 
-        <!-- 空白狀態提示 -->
-        <div id="emptyState" class="hidden py-16 text-center bg-white rounded-2xl border-2 border-dashed theme-border">
-            <i class="fas fa-box-open mx-auto text-[#EEDCC8] text-5xl mb-3"></i>
-            <p class="text-gray-400 italic">目前還沒有記錄任何食材</p>
-        </div>
+            <!-- 空白狀態提示 -->
+            <div id="emptyState" class="hidden py-16 text-center">
+                <p class="theme-text text-lg font-medium mb-4">記錄您的美食地圖</p>
+                <i class="fas fa-box-open mx-auto text-[#EEDCC8] text-5xl mb-3"></i>
+                <p class="text-gray-400 italic text-sm">目前還沒有記錄任何食材</p>
+            </div>
+        </section>
     </div>
 
     <script>
@@ -195,33 +200,33 @@
 
             emptyState.classList.add('hidden');
             foodList.innerHTML = filteredItems.map(item => `
-                <div class="bg-white rounded-2xl p-4 shadow-sm border theme-border flex gap-4 animate-fadeIn">
-                    <div class="w-20 h-20 md:w-24 md:h-24 bg-[#F9F3EE] rounded-xl overflow-hidden flex-shrink-0">
+                <div class="bg-white rounded-xl p-3 shadow-sm border theme-border flex gap-3 animate-fadeIn">
+                    <div class="w-16 h-16 md:w-20 md:h-20 bg-[#F9F3EE] rounded-lg overflow-hidden flex-shrink-0">
                         ${item.image ? 
                             `<img src="${item.image}" class="w-full h-full object-cover">` : 
-                            `<div class="w-full h-full flex items-center justify-center text-[#EEDCC8]"><i class="fas fa-box text-2xl"></i></div>`
+                            `<div class="w-full h-full flex items-center justify-center text-[#EEDCC8]"><i class="fas fa-box text-xl"></i></div>`
                         }
                     </div>
                     <div class="flex-1 flex flex-col justify-between overflow-hidden">
                         <div>
                             <div class="flex justify-between items-start">
-                                <h3 class="font-bold text-gray-800 text-base md:text-lg truncate pr-2">${item.name}</h3>
+                                <h3 class="font-bold text-gray-800 text-sm md:text-base truncate pr-2">${item.name}</h3>
                                 <button onclick="deleteItem(${item.id})" class="text-gray-300 hover:text-red-500 p-1">
-                                    <i class="fas fa-trash-can text-sm"></i>
+                                    <i class="fas fa-trash-can text-xs"></i>
                                 </button>
                             </div>
-                            <div class="mt-1 space-y-0.5 text-[11px] md:text-xs text-gray-500">
+                            <div class="mt-0.5 space-y-0.5 text-[10px] md:text-xs text-gray-500">
                                 <div class="flex items-center gap-1">
-                                    <i class="far fa-calendar-alt theme-text"></i> ${item.date}
+                                    <i class="far fa-calendar-alt theme-text scale-75"></i> ${item.date}
                                 </div>
                                 <div class="flex items-center gap-1">
-                                    <i class="fas fa-location-dot theme-text"></i> ${item.location}
+                                    <i class="fas fa-location-dot theme-text scale-75"></i> ${item.location}
                                 </div>
                             </div>
                         </div>
-                        <div class="flex justify-between items-end mt-2">
-                            <span class="font-bold text-base md:text-lg theme-text">$${item.price}</span>
-                            <span class="bg-[#FAF0E6] text-[#D9A05B] text-[10px] px-2 py-0.5 rounded-full font-medium border theme-border">在庫</span>
+                        <div class="flex justify-between items-end mt-1">
+                            <span class="font-bold text-sm md:text-base theme-text">$${item.price}</span>
+                            <span class="bg-[#FAF0E6] text-[#D9A05B] text-[9px] px-2 py-0.5 rounded-full font-medium border theme-border">在庫</span>
                         </div>
                     </div>
                 </div>
