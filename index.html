@@ -63,7 +63,6 @@
             box-shadow: 0 0 0 3px rgba(217, 160, 91, 0.1);
         }
 
-        /* 搜尋框樣式 */
         .search-container {
             position: relative;
             background: #FFFFFF;
@@ -130,8 +129,7 @@
         }
         
         .list-card:active {
-            transform: scale(0.97);
-            background: #FDF8F0;
+            /* 修正 active 縮放，避免點擊計數按鈕時整張卡片震動 */
         }
 
         .info-tag {
@@ -154,6 +152,25 @@
             border-radius: 1rem;
             overflow: hidden;
         }
+
+        /* 計數器專屬樣式 */
+        .counter-btn {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: #FFFFFF;
+            border: 1px solid var(--input-border);
+            color: var(--theme-color);
+            transition: all 0.2s;
+        }
+        .counter-btn:active {
+            background: var(--theme-color);
+            color: white;
+            transform: scale(0.9);
+        }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -166,7 +183,6 @@
     <div class="max-w-xl mx-auto min-h-screen px-5 py-8">
         <header class="text-center mb-8">
             <div class="app-title">
-                <!-- 頂部保持胡蘿蔔圖示 -->
                 <i class="fas fa-carrot"></i> 食材小管家
             </div>
         </header>
@@ -195,9 +211,15 @@
                     </div>
                 </div>
 
-                <div>
-                    <label class="label-text">存放地方</label>
-                    <input type="text" id="foodLocation" placeholder="點擊輸入..." class="custom-input">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="label-text">存放地方</label>
+                        <input type="text" id="foodLocation" placeholder="點擊輸入..." class="custom-input">
+                    </div>
+                    <div>
+                        <label class="label-text">初始數量</label>
+                        <input type="number" id="foodQuantity" value="1" min="1" class="custom-input">
+                    </div>
                 </div>
 
                 <div>
@@ -245,7 +267,6 @@
             </form>
         </section>
 
-        <!-- 搜尋欄位 - 圖示改回搜尋放大鏡 -->
         <div class="mb-6 animate-fadeIn" style="animation-delay: 0.1s;">
             <div class="search-container">
                 <i class="fas fa-search search-icon"></i>
@@ -256,12 +277,11 @@
 
         <div id="foodList" class="space-y-4"></div>
         
-        <!-- 空白狀態 - 配合搜尋意象，使用箱子 -->
         <div id="emptyState" class="hidden py-20 text-center">
             <div class="bg-orange-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 border border-orange-100">
                 <i class="fas fa-box-open text-orange-200 text-3xl"></i>
             </div>
-            <p class="text-gray-400 font-medium">倉庫空空如也 >_<</p>
+            <p class="text-gray-400 font-medium">倉庫空空如也 &gt;_&lt;</p>
         </div>
     </div>
 
@@ -379,6 +399,7 @@
                 date: document.getElementById('foodDate').value || null,
                 price: document.getElementById('foodPrice').value || 0,
                 location: document.getElementById('foodLocation').value || "",
+                quantity: parseInt(document.getElementById('foodQuantity').value) || 1,
                 note: document.getElementById('foodNote').value || "",
                 image: currentImageData
             };
@@ -393,6 +414,29 @@
                 window.location.reload();
             }
         });
+
+        window.updateQuantity = async (id, delta) => {
+            const item = items.find(i => i.id === id);
+            if (!item) return;
+            
+            const newQty = Math.max(0, (item.quantity || 0) + delta);
+            if (newQty === item.quantity) return;
+
+            // 即時更新介面 (Optimistic UI)
+            item.quantity = newQty;
+            renderItems();
+
+            const { error } = await supabaseClient
+                .from('foods')
+                .update({ quantity: newQty })
+                .eq('id', id);
+
+            if (error) {
+                console.error("更新數量失敗", error);
+                alert("更新失敗，請稍後再試");
+                window.location.reload();
+            }
+        };
 
         window.deleteItem = async (id) => {
             if (!confirm('要刪除這個項目嗎？')) return;
@@ -432,8 +476,20 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="mt-3 flex justify-between items-center">
+                            
+                            <!-- 計數器與價格列 -->
+                            <div class="mt-3 flex justify-between items-end">
                                 <span class="font-black text-xl theme-text"><small class="text-sm mr-1 font-bold">$</small>${item.price}</span>
+                                
+                                <div class="flex items-center gap-3 bg-white px-2 py-1 rounded-xl border border-orange-50 shadow-sm">
+                                    <button onclick="updateQuantity(${item.id}, -1)" class="counter-btn text-xs">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <span class="font-bold text-gray-700 w-6 text-center">${item.quantity || 0}</span>
+                                    <button onclick="updateQuantity(${item.id}, 1)" class="counter-btn text-xs">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
