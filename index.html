@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>食材小管家</title>
     <link rel="icon" href="foodicon.png" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -24,20 +24,18 @@
             background-attachment: fixed;
             color: var(--text-main);
             -webkit-tap-highlight-color: transparent; 
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            width: 100%;
         }
 
+        #foodList { -webkit-overflow-scrolling: touch; }
         .theme-text { color: var(--theme-color); }
         .theme-bg { background-color: var(--theme-color); }
         
         .app-title {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            font-size: 1.75rem;
-            font-weight: 800;
-            color: var(--theme-color);
-            letter-spacing: 0.05em;
+            display: flex; align-items: center; justify-content: center;
+            gap: 12px; font-size: 1.75rem; font-weight: 800; color: var(--theme-color);
         }
 
         .solid-card {
@@ -48,14 +46,10 @@
         }
 
         .custom-input {
-            width: 100%;
-            padding: 0.875rem 1rem; 
-            border-radius: 0.75rem;
-            border: 1.5px solid var(--input-border);
-            background: #FFFFFF;
-            transition: all 0.2s ease;
-            outline: none;
-            font-size: 16px; 
+            width: 100%; padding: 0.875rem 1rem; border-radius: 0.75rem;
+            border: 1.5px solid var(--input-border); background: #FFFFFF;
+            transition: all 0.2s ease; outline: none; font-size: 16px; 
+            -webkit-appearance: none;
         }
         
         .custom-input:focus {
@@ -63,135 +57,72 @@
             box-shadow: 0 0 0 3px rgba(217, 160, 91, 0.1);
         }
 
+        .edit-field { margin-bottom: 0.75rem; }
+        .edit-label {
+            font-size: 0.75rem; font-weight: 700; color: var(--theme-color);
+            margin-bottom: 2px; display: block; opacity: 0.8;
+        }
         .edit-input {
-            background: transparent;
-            border: 1px solid transparent;
-            border-bottom: 1px dashed var(--theme-color);
-            padding: 2px 4px;
-            outline: none;
-            width: 100%;
-            font-weight: inherit;
-            color: inherit;
+            background: #fff; border: 1.5px solid var(--input-border);
+            border-radius: 0.5rem; padding: 0.5rem 0.75rem;
+            outline: none; width: 100%; font-size: 16px;
+            color: var(--text-main); -webkit-appearance: none;
+            transition: border-color 0.2s;
         }
-
-        .edit-input:focus {
-            background: #fff;
-            border: 1px solid var(--theme-color);
-            border-radius: 4px;
-        }
+        .edit-input:focus { border-color: var(--theme-color); }
 
         .search-container {
-            position: relative;
-            background: #FFFFFF;
-            border-radius: 1.25rem;
+            position: relative; background: #FFFFFF; border-radius: 1.25rem;
             box-shadow: 0 4px 12px rgba(139, 115, 85, 0.1);
-            border: 2px solid rgba(217, 160, 91, 0.2);
-            transition: all 0.3s ease;
+            border: 2px solid rgba(217, 160, 91, 0.2); transition: all 0.3s ease;
         }
-        
-        .search-container:focus-within {
-            border-color: var(--theme-color);
-            box-shadow: 0 6px 15px rgba(217, 160, 91, 0.15);
-            transform: translateY(-1px);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 1.25rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--theme-color);
-            font-size: 1.1rem;
-            font-weight: 900;
-        }
+        .search-container:focus-within { border-color: var(--theme-color); }
 
         .search-input {
-            width: 100%;
-            padding: 1rem 1rem 1rem 3.25rem;
-            border-radius: 1rem;
-            border: none;
-            background: transparent;
-            outline: none;
-            font-size: 1rem;
-            color: var(--text-main);
+            width: 100%; padding: 1rem 1rem 1rem 3.25rem; border: none;
+            background: transparent; outline: none; font-size: 16px;
+            -webkit-appearance: none;
         }
-
-        .search-input::placeholder {
-            color: #BCB0A1;
-        }
-
-        .label-text {
-            display: block;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-bottom: 0.4rem;
-            font-weight: 600;
-        }
-
-        #imageInput { display: none; }
-        
-        #loadingOverlay {
-            position: fixed; inset: 0; background: var(--bg-color);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 100; transition: opacity 0.4s;
-        }
-        
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
 
         .list-card {
-            background: var(--card-bg);
-            border: 1px solid rgba(217, 160, 91, 0.1);
-            transition: all 0.2s ease;
-            cursor: pointer;
+            background: var(--card-bg); border: 1px solid rgba(217, 160, 91, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            position: relative;
         }
 
         .list-card.editing {
-            border: 2px solid var(--theme-color);
-            box-shadow: 0 0 15px rgba(217, 160, 91, 0.2);
+            border-color: var(--theme-color);
+            background: #FFFFFF;
+            box-shadow: 0 10px 25px rgba(139, 115, 85, 0.15);
+            transform: scale(1.02);
+            z-index: 20;
         }
         
         .info-tag {
-            display: flex;
-            align-items: center;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            background: rgba(232, 223, 208, 0.3);
-            padding: 2px 8px;
-            border-radius: 6px;
-            width: fit-content;
+            display: flex; align-items: center; font-size: 0.8rem;
+            color: var(--text-muted); background: rgba(232, 223, 208, 0.3);
+            padding: 2px 8px; border-radius: 6px; width: fit-content;
         }
 
         #cameraContainer {
-            display: none;
-            position: relative;
-            width: 100%;
-            aspect-ratio: 4/3;
-            background: #000;
-            border-radius: 1rem;
-            overflow: hidden;
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: #000; z-index: 1000;
         }
 
         .counter-btn {
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            background: #FFFFFF;
-            border: 1px solid var(--input-border);
-            color: var(--theme-color);
-            transition: all 0.2s;
+            width: 32px; height: 32px; display: flex; align-items: center;
+            justify-content: center; border-radius: 8px; background: #FFFFFF;
+            border: 1px solid var(--input-border); color: var(--theme-color);
+            transition: all 0.2s; -webkit-appearance: none;
         }
-        .counter-btn:active {
-            background: var(--theme-color);
-            color: white;
-            transform: scale(0.9);
-        }
+        .counter-btn:active { background: var(--theme-color); color: white; transform: scale(0.9); }
 
-        .btn-save { background-color: #4CAF50; color: white; }
-        .btn-cancel { background-color: #f44336; color: white; }
+        #loadingOverlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg-color); z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -201,7 +132,20 @@
         <p class="theme-text font-bold tracking-widest">載入中</p>
     </div>
 
-    <div class="max-w-xl mx-auto min-h-screen px-5 py-8">
+    <!-- 全局相機容器 (支援新增與編輯) -->
+    <div id="cameraContainer">
+        <video id="cameraStream" autoplay playsinline muted class="w-full h-full object-cover"></video>
+        <div class="absolute bottom-10 left-0 right-0 flex justify-center gap-10">
+            <button type="button" onclick="takeSnapshot()" class="bg-white text-orange-500 w-16 h-16 rounded-full shadow-2xl flex items-center justify-center active:scale-90 border-4 border-orange-100">
+                <i class="fas fa-camera text-2xl"></i>
+            </button>
+            <button type="button" onclick="stopCamera()" class="bg-gray-800/80 text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center active:scale-90">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="max-w-xl mx-auto min-h-screen px-5 py-8 pb-20">
         <header class="text-center mb-8">
             <div class="app-title">
                 <i class="fas fa-carrot"></i> 食材小管家
@@ -209,23 +153,23 @@
         </header>
 
         <!-- 新增表單 -->
-        <section class="solid-card p-6 mb-8 animate-fadeIn">
+        <section class="solid-card p-6 mb-8">
             <h2 class="text-md font-bold mb-5 flex items-center gap-2 theme-text border-b border-orange-100 pb-3">
                 <i class="fas fa-plus-circle"></i> 新增食材
             </h2>
-            <form id="foodForm" class="space-y-4">
+            <form id="foodForm" class="space-y-4" onsubmit="return false;">
                 <div>
-                    <label class="label-text">名稱</label>
-                    <input type="text" id="foodName" placeholder="點擊輸入..." class="custom-input" required>
+                    <label class="text-xs font-bold text-gray-400 mb-1 block">名稱</label>
+                    <input type="text" id="foodName" class="custom-input" required>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="label-text">購買日期</label>
+                        <label class="text-xs font-bold text-gray-400 mb-1 block">購買日期</label>
                         <input type="date" id="foodDate" class="custom-input text-gray-600">
                     </div>
                     <div>
-                        <label class="label-text">價格</label>
+                        <label class="text-xs font-bold text-gray-400 mb-1 block">價格</label>
                         <div class="relative">
                             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
                             <input type="number" id="foodPrice" placeholder="0" class="custom-input pl-7">
@@ -235,66 +179,53 @@
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="label-text">存放地方</label>
-                        <input type="text" id="foodLocation" placeholder="點擊輸入..." class="custom-input">
+                        <label class="text-xs font-bold text-gray-400 mb-1 block">存放地方</label>
+                        <input type="text" id="foodLocation" class="custom-input">
                     </div>
                     <div>
-                        <label class="label-text">初始數量</label>
+                        <label class="text-xs font-bold text-gray-400 mb-1 block">初始數量</label>
                         <input type="number" id="foodQuantity" value="1" min="1" class="custom-input">
                     </div>
                 </div>
 
                 <div>
-                    <label class="label-text">備註</label>
-                    <textarea id="foodNote" placeholder="補充說明..." class="custom-input h-24 resize-none"></textarea>
+                    <label class="text-xs font-bold text-gray-400 mb-1 block">備註</label>
+                    <textarea id="foodNote" placeholder="補充說明..." class="custom-input h-20 resize-none"></textarea>
                 </div>
 
                 <div class="pt-2">
                     <div class="flex justify-between items-center mb-3">
-                        <label class="label-text mb-0">照片</label>
-                        <button type="button" onclick="startCamera()" class="text-sm font-bold theme-text bg-orange-50 px-4 py-2 rounded-full active:bg-orange-100 transition-all">
-                            <i class="fas fa-camera mr-1"></i> 使用相機
+                        <label class="text-xs font-bold text-gray-400 mb-0">照片</label>
+                        <button type="button" onclick="triggerCamera('add')" class="text-sm font-bold theme-text bg-orange-50 px-4 py-2 rounded-full active:bg-orange-100">
+                            <i class="fas fa-camera mr-1"></i> 相機拍攝
                         </button>
                     </div>
 
-                    <div id="cameraContainer" class="mb-3 shadow-inner">
-                        <video id="cameraStream" autoplay playsinline class="w-full h-full object-cover"></video>
-                        <div class="absolute bottom-4 left-0 right-0 flex justify-center gap-6">
-                            <button type="button" onclick="takeSnapshot()" class="bg-white text-orange-500 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center active:scale-90 transition-transform border-4 border-orange-100">
-                                <i class="fas fa-camera text-2xl"></i>
-                            </button>
-                            <button type="button" onclick="stopCamera()" class="bg-gray-800/80 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center active:scale-90 transition-transform">
-                                <i class="fas fa-times text-xl"></i>
-                            </button>
-                        </div>
-                    </div>
-
                     <div id="dropZone" onclick="document.getElementById('imageInput').click()" 
-                        class="h-44 border-2 border-dashed border-[#E8DFD0] rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-[#D9A05B] transition-all bg-white/60 overflow-hidden relative shadow-sm">
+                        class="h-40 border-2 border-dashed border-[#E8DFD0] rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-[#D9A05B] transition-all bg-white/60 overflow-hidden relative shadow-sm">
                         <div id="uploadPlaceholder" class="text-center">
-                            <div class="w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-2">
-                                <i class="fas fa-image text-orange-300 text-xl"></i>
+                            <div class="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-2">
+                                <i class="fas fa-image text-orange-300 text-lg"></i>
                             </div>
-                            <p class="text-sm text-gray-400 font-medium">點擊上傳照片</p>
+                            <p class="text-xs text-gray-400 font-medium">點擊或拖曳上傳照片</p>
                         </div>
                         <img id="imagePreview" src="" class="hidden w-full h-full object-cover">
                     </div>
-                    <input type="file" id="imageInput" accept="image/*">
+                    <input type="file" id="imageInput" accept="image/*" class="hidden">
                 </div>
 
-                <button type="submit" id="submitBtn" class="w-full theme-bg text-white font-extrabold py-4 rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 mt-6 text-lg">
-                    <span id="btnText">確認上傳</span>
-                    <i id="btnIcon" class="fas fa-check-circle"></i>
+                <button type="button" id="submitBtn" onclick="handleFormSubmit()" class="w-full theme-bg text-white font-extrabold py-4 rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 mt-6 text-lg">
+                    <span>確認上傳</span>
+                    <i class="fas fa-check-circle"></i>
                 </button>
             </form>
         </section>
 
         <!-- 搜尋列 -->
-        <div class="mb-6 animate-fadeIn" style="animation-delay: 0.1s;">
+        <div class="mb-6">
             <div class="search-container">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" id="searchInput" placeholder="搜尋食材、存放地方、日期或備註..." 
-                    class="search-input">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input type="text" id="searchInput" placeholder="搜尋食材、存放地或備註..." class="search-input">
             </div>
         </div>
 
@@ -305,321 +236,264 @@
             <div class="bg-orange-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 border border-orange-100">
                 <i class="fas fa-box-open text-orange-200 text-3xl"></i>
             </div>
-            <p class="text-gray-400 font-medium">倉庫空空如也 &gt;_&lt;</p>
+            <p class="text-gray-400 font-medium">還沒有食材記錄喔</p>
         </div>
     </div>
+
+    <!-- 編輯隱藏檔案輸入 -->
+    <input type="file" id="editImageInput" accept="image/*" class="hidden">
 
     <script>
         const SUPABASE_URL = 'https://eqjrudcgmryavwbjaecm.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxanJ1ZGNnbXJ5YXZ3YmphZWNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MjkzODgsImV4cCI6MjA4NzAwNTM4OH0.Tl9UvO41jlRPRmfw-bA6t5s_qMKQjHAfINUJRoRnB4A';
-
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let items = [];
         let filteredItems = [];
-        let currentImageData = null;
+        let currentImageData = null; // 新增用的暫存
+        let editImageData = null;    // 編輯用的暫存
         let stream = null;
         let editingId = null;
+        let cameraTarget = 'add'; // 'add' 或 'edit'
 
-        const foodForm = document.getElementById('foodForm');
-        const imageInput = document.getElementById('imageInput');
-        const imagePreview = document.getElementById('imagePreview');
-        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
-        const foodList = document.getElementById('foodList');
-        const emptyState = document.getElementById('emptyState');
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const submitBtn = document.getElementById('submitBtn');
-        const btnText = document.getElementById('btnText');
-        const btnIcon = document.getElementById('btnIcon');
-        const searchInput = document.getElementById('searchInput');
-        const cameraContainer = document.getElementById('cameraContainer');
-        const cameraStream = document.getElementById('cameraStream');
-        const dropZone = document.getElementById('dropZone');
-
-        async function init() {
+        async function triggerCamera(target) {
+            cameraTarget = target;
             try {
-                const { data, error } = await supabaseClient
-                    .from('foods')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-                items = data || [];
-                filteredItems = [...items];
-                renderItems();
-                
-                loadingOverlay.style.opacity = '0';
-                setTimeout(() => loadingOverlay.style.display = 'none', 400);
-            } catch (err) {
-                console.error("Initialization Error:", err);
-            }
-        }
-
-        // 相機功能
-        async function startCamera() {
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: "environment" }, 
-                    audio: false 
-                });
-                cameraStream.srcObject = stream;
-                cameraContainer.style.display = 'block';
-                dropZone.style.display = 'none';
-            } catch (err) {
-                alert("無法開啟相機，請檢查權限設置。");
-            }
+                const constraints = { video: { facingMode: "environment" }, audio: false };
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                const video = document.getElementById('cameraStream');
+                video.srcObject = stream;
+                video.onloadedmetadata = () => video.play();
+                document.getElementById('cameraContainer').style.display = 'block';
+            } catch (err) { alert("無法啟動相機。"); }
         }
 
         function stopCamera() {
-            if (stream) { stream.getTracks().forEach(track => track.stop()); }
-            cameraContainer.style.display = 'none';
-            dropZone.style.display = 'flex';
+            if (stream) { stream.getTracks().forEach(track => track.stop()); stream = null; }
+            document.getElementById('cameraContainer').style.display = 'none';
         }
 
         function takeSnapshot() {
+            const video = document.getElementById('cameraStream');
             const canvas = document.createElement('canvas');
-            canvas.width = cameraStream.videoWidth;
-            canvas.height = cameraStream.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(cameraStream, 0, 0, canvas.width, canvas.height);
-            currentImageData = canvas.toDataURL('image/jpeg', 0.7);
-            imagePreview.src = currentImageData;
-            imagePreview.classList.remove('hidden');
-            uploadPlaceholder.classList.add('hidden');
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+            
+            if (cameraTarget === 'add') {
+                currentImageData = dataUrl;
+                document.getElementById('imagePreview').src = dataUrl;
+                document.getElementById('imagePreview').classList.remove('hidden');
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
+            } else {
+                editImageData = dataUrl;
+                const editPreview = document.getElementById(`editPreview-${editingId}`);
+                if (editPreview) editPreview.src = dataUrl;
+            }
             stopCamera();
         }
 
-        // 搜尋功能
-        searchInput.addEventListener('input', (e) => {
-            const keyword = e.target.value.toLowerCase().trim();
-            filteredItems = items.filter(item => 
-                (item.name?.toLowerCase().includes(keyword)) ||
-                (item.location?.toLowerCase().includes(keyword)) ||
-                (item.date?.toLowerCase().includes(keyword)) ||
-                (item.note?.toLowerCase().includes(keyword))
-            );
+        async function init() {
+            const { data } = await supabaseClient.from('foods').select('*').order('created_at', { ascending: false });
+            items = data || [];
+            filteredItems = [...items];
             renderItems();
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        // 新增照片的檔案選擇
+        document.getElementById('imageInput').addEventListener('change', (e) => {
+            handleFileSelect(e, (data) => {
+                currentImageData = data;
+                document.getElementById('imagePreview').src = data;
+                document.getElementById('imagePreview').classList.remove('hidden');
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
+            });
         });
 
-        // 圖片上傳預覽
-        imageInput.addEventListener('change', function(e) {
+        // 編輯照片的檔案選擇
+        document.getElementById('editImageInput').addEventListener('change', (e) => {
+            handleFileSelect(e, (data) => {
+                editImageData = data;
+                const editPreview = document.getElementById(`editPreview-${editingId}`);
+                if (editPreview) editPreview.src = data;
+            });
+        });
+
+        function handleFileSelect(e, callback) {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = (ev) => {
-                    currentImageData = ev.target.result;
-                    imagePreview.src = currentImageData;
-                    imagePreview.classList.remove('hidden');
-                    uploadPlaceholder.classList.add('hidden');
-                };
+                reader.onload = (ev) => callback(ev.target.result);
                 reader.readAsDataURL(file);
             }
-        });
+        }
 
-        // 新增食材
-        foodForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            submitBtn.disabled = true;
-            btnText.textContent = "儲存中...";
-            btnIcon.className = "fas fa-spinner fa-spin";
-            
+        async function handleFormSubmit() {
+            const name = document.getElementById('foodName').value;
+            if (!name) return alert("請填寫名稱");
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
             const payload = {
-                name: document.getElementById('foodName').value || "未命名食材",
+                name,
                 date: document.getElementById('foodDate').value || null,
-                price: document.getElementById('foodPrice').value || 0,
+                price: parseInt(document.getElementById('foodPrice').value) || 0,
                 location: document.getElementById('foodLocation').value || "",
                 quantity: parseInt(document.getElementById('foodQuantity').value) || 1,
                 note: document.getElementById('foodNote').value || "",
                 image: currentImageData
             };
+            await supabaseClient.from('foods').insert([payload]);
+            document.getElementById('foodForm').reset();
+            currentImageData = null;
+            document.getElementById('imagePreview').classList.add('hidden');
+            document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            btn.disabled = false;
+            await init();
+        }
 
-            const { error } = await supabaseClient.from('foods').insert([payload]);
-            if (error) {
-                alert("儲存失敗: " + error.message);
-                submitBtn.disabled = false;
-                btnText.textContent = "確認上傳";
-                btnIcon.className = "fas fa-check-circle";
-            } else {
-                await init();
-                foodForm.reset();
-                currentImageData = null;
-                imagePreview.src = "";
-                imagePreview.classList.add('hidden');
-                uploadPlaceholder.classList.remove('hidden');
-                submitBtn.disabled = false;
-                btnText.textContent = "確認上傳";
-                btnIcon.className = "fas fa-check-circle";
-            }
-        });
-
-        // 修改與儲存
         window.toggleEdit = (id) => {
-            if (editingId === id) return; // 已經在編輯中
+            if (editingId === id) return;
             editingId = id;
+            editImageData = items.find(i => i.id === id).image; // 載入原始照片
             renderItems();
         };
 
         window.cancelEdit = (e) => {
             e.stopPropagation();
             editingId = null;
+            editImageData = null;
             renderItems();
         };
 
         window.saveEdit = async (e, id) => {
             e.stopPropagation();
             const card = document.querySelector(`.list-card[data-id="${id}"]`);
-            const updatedPayload = {
+            const up = {
                 name: card.querySelector('.edit-name').value,
                 date: card.querySelector('.edit-date').value || null,
                 price: parseInt(card.querySelector('.edit-price').value) || 0,
                 location: card.querySelector('.edit-location').value,
-                note: card.querySelector('.edit-note').value
+                note: card.querySelector('.edit-note').value,
+                image: editImageData // 保存更換後或原本的照片
             };
-
-            const { error } = await supabaseClient
-                .from('foods')
-                .update(updatedPayload)
-                .eq('id', id);
-
-            if (error) {
-                alert("更新失敗: " + error.message);
-            } else {
-                editingId = null;
-                await init();
-            }
+            await supabaseClient.from('foods').update(up).eq('id', id);
+            editingId = null;
+            editImageData = null;
+            await init();
         };
 
-        // 數量增減
-        window.updateQuantity = async (e, id, delta) => {
+        window.updateQuantity = async (e, id, d) => {
             e.stopPropagation();
-            const item = items.find(i => i.id === id);
-            if (!item) return;
-            
-            const newQty = Math.max(0, (item.quantity || 0) + delta);
-            if (newQty === item.quantity) return;
-
-            item.quantity = newQty;
+            const i = items.find(x => x.id === id);
+            const n = Math.max(0, i.quantity + d);
+            i.quantity = n;
             renderItems();
-
-            const { error } = await supabaseClient
-                .from('foods')
-                .update({ quantity: newQty })
-                .eq('id', id);
-
-            if (error) {
-                console.error("更新數量失敗", error);
-                await init();
-            }
+            await supabaseClient.from('foods').update({ quantity: n }).eq('id', id);
         };
 
-        // 刪除
         window.deleteItem = async (e, id) => {
             e.stopPropagation();
-            if (!confirm('要刪除這個項目嗎？')) return;
-            const { error } = await supabaseClient.from('foods').delete().eq('id', id);
-            if (error) alert("刪除失敗"); else await init();
+            if (confirm('確定刪除？')) {
+                await supabaseClient.from('foods').delete().eq('id', id);
+                await init();
+            }
         };
 
-        // 渲染列表
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const k = e.target.value.toLowerCase().trim();
+            filteredItems = items.filter(i => 
+                (i.name && i.name.toLowerCase().includes(k)) || 
+                (i.location && i.location.toLowerCase().includes(k)) || 
+                (i.note && i.note.toLowerCase().includes(k))
+            );
+            renderItems();
+        });
+
         function renderItems() {
+            const container = document.getElementById('foodList');
             if (filteredItems.length === 0) {
-                foodList.innerHTML = '';
-                emptyState.classList.remove('hidden');
+                container.innerHTML = '';
+                document.getElementById('emptyState').classList.remove('hidden');
                 return;
             }
-
-            emptyState.classList.add('hidden');
-            foodList.innerHTML = filteredItems.map(item => {
+            document.getElementById('emptyState').classList.add('hidden');
+            container.innerHTML = filteredItems.map(item => {
                 const isEditing = editingId === item.id;
-                
+                if (isEditing) {
+                    return `
+                    <div class="list-card editing rounded-2xl p-5" data-id="${item.id}">
+                        <div class="flex gap-4 mb-4">
+                            <!-- 編輯模式的照片點擊區域 -->
+                            <div class="w-24 h-24 bg-orange-50 rounded-xl overflow-hidden flex-shrink-0 relative group border-2 border-orange-100">
+                                <img id="editPreview-${item.id}" src="${editImageData || ''}" class="w-full h-full object-cover ${!editImageData ? 'hidden' : ''}">
+                                <div class="w-full h-full flex flex-col items-center justify-center text-orange-300 ${editImageData ? 'hidden' : ''}">
+                                    <i class="fas fa-image text-xl"></i>
+                                </div>
+                                <div class="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onclick="triggerCamera('edit')" class="text-white text-[10px] mb-1 font-bold"><i class="fas fa-camera mr-1"></i>拍攝</button>
+                                    <button onclick="document.getElementById('editImageInput').click()" class="text-white text-[10px] font-bold"><i class="fas fa-folder mr-1"></i>相簿</button>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <div class="edit-field">
+                                    <label class="edit-label">食材名稱</label>
+                                    <input type="text" class="edit-name edit-input font-bold" value="${item.name}">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div class="edit-field">
+                                <label class="edit-label">日期</label>
+                                <input type="date" class="edit-date edit-input" value="${item.date || ''}">
+                            </div>
+                            <div class="edit-field">
+                                <label class="edit-label">價格</label>
+                                <input type="number" class="edit-price edit-input" value="${item.price || 0}">
+                            </div>
+                        </div>
+                        <div class="edit-field mb-3">
+                            <label class="edit-label">存放地點</label>
+                            <input type="text" class="edit-location edit-input" value="${item.location || ''}">
+                        </div>
+                        <div class="edit-field">
+                            <label class="edit-label">備註</label>
+                            <textarea class="edit-note edit-input h-16" placeholder="寫點什麼...">${item.note || ''}</textarea>
+                        </div>
+                        <div class="mt-5 flex gap-3">
+                            <button onclick="cancelEdit(event)" class="flex-1 py-3 rounded-xl font-bold bg-gray-100 text-gray-500 active:bg-gray-200">取消</button>
+                            <button onclick="saveEdit(event, ${item.id})" class="flex-1 py-3 rounded-xl font-bold theme-bg text-white shadow-md active:opacity-90">儲存修改</button>
+                        </div>
+                    </div>`;
+                }
                 return `
-                <div class="list-card rounded-2xl p-5 shadow-sm animate-fadeIn relative ${isEditing ? 'editing' : ''}" 
-                     data-id="${item.id}"
-                     onclick="${!isEditing ? `toggleEdit(${item.id})` : ''}">
-                    
-                    <!-- 刪除按鈕 -->
-                    <button onclick="deleteItem(event, ${item.id})" class="absolute top-4 right-4 text-gray-300 hover:text-red-400 p-2 z-10">
-                        <i class="fas fa-trash-alt text-sm"></i>
-                    </button>
-                    
-                    <div class="flex gap-5">
-                        <!-- 圖片展示 -->
-                        <div class="w-24 h-24 bg-orange-50 rounded-2xl overflow-hidden flex-shrink-0 shadow-inner border border-orange-100/50">
-                            ${item.image ? `<img src="${item.image}" class="w-full h-full object-cover">` : 
-                            `<div class="w-full h-full flex items-center justify-center text-orange-200"><i class="fas fa-utensils text-2xl"></i></div>`}
+                <div class="list-card rounded-2xl p-4" data-id="${item.id}" onclick="toggleEdit(${item.id})">
+                    <button onclick="deleteItem(event, ${item.id})" class="absolute top-3 right-3 text-gray-300 p-2 z-10"><i class="fas fa-trash-alt text-sm"></i></button>
+                    <div class="flex gap-4">
+                        <div class="w-20 h-20 bg-orange-50 rounded-xl overflow-hidden flex-shrink-0 border border-orange-100/50">
+                            ${item.image ? `<img src="${item.image}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-orange-200"><i class="fas fa-utensils text-xl"></i></div>`}
                         </div>
-                        
-                        <div class="flex-1 flex flex-col justify-between py-1">
+                        <div class="flex-1 flex flex-col justify-between">
                             <div>
-                                <!-- 名稱編輯或展示 -->
-                                ${isEditing ? 
-                                    `<input type="text" class="edit-name edit-input text-lg font-bold mb-2" value="${item.name}" placeholder="名稱">` : 
-                                    `<h3 class="font-bold text-lg text-gray-800 mb-2 truncate pr-6">${item.name}</h3>`
-                                }
-                                
-                                <div class="space-y-1.5">
-                                    <!-- 日期 -->
-                                    <div class="info-tag">
-                                        <i class="far fa-calendar-alt mr-2 opacity-70"></i>
-                                        ${isEditing ? 
-                                            `<input type="date" class="edit-date edit-input text-xs" value="${item.date || ''}">` : 
-                                            (item.date || '未註記')
-                                        }
-                                    </div>
-                                    <!-- 地點 -->
-                                    <div class="info-tag">
-                                        <i class="fas fa-map-marker-alt mr-2 opacity-70"></i>
-                                        ${isEditing ? 
-                                            `<input type="text" class="edit-location edit-input text-xs" value="${item.location || ''}" placeholder="地點">` : 
-                                            (item.location || '未註記')
-                                        }
-                                    </div>
+                                <h3 class="font-bold text-gray-800 pr-6 truncate">${item.name}</h3>
+                                <div class="flex flex-wrap gap-2 mt-1">
+                                    <div class="info-tag text-[10px]"><i class="far fa-calendar-alt mr-1"></i>${item.date || '未設定'}</div>
+                                    <div class="info-tag text-[10px]"><i class="fas fa-map-marker-alt mr-1"></i>${item.location || '未設定'}</div>
                                 </div>
                             </div>
-                            
-                            <div class="mt-3 flex justify-between items-end">
-                                <!-- 價格 -->
-                                <div class="flex items-center theme-text font-black text-xl">
-                                    <small class="text-sm mr-1 font-bold">$</small>
-                                    ${isEditing ? 
-                                        `<input type="number" class="edit-price edit-input w-20" value="${item.price || 0}">` : 
-                                        item.price
-                                    }
-                                </div>
-                                
-                                <!-- 數量計數器 (編輯時不可用) -->
-                                <div class="flex items-center gap-3 bg-white px-2 py-1 rounded-xl border border-orange-50 shadow-sm ${isEditing ? 'opacity-30' : ''}">
-                                    <button onclick="updateQuantity(event, ${item.id}, -1)" class="counter-btn text-xs" ${isEditing ? 'disabled' : ''}>
-                                        <i class="fas fa-minus"></i>
-                                    </button>
-                                    <span class="font-bold text-gray-700 w-6 text-center">${item.quantity || 0}</span>
-                                    <button onclick="updateQuantity(event, ${item.id}, 1)" class="counter-btn text-xs" ${isEditing ? 'disabled' : ''}>
-                                        <i class="fas fa-plus"></i>
-                                    </button>
+                            <div class="flex justify-between items-end mt-2">
+                                <div class="theme-text font-black text-lg"><small class="text-xs mr-0.5">$</small>${item.price}</div>
+                                <div class="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border border-orange-100">
+                                    <button onclick="updateQuantity(event, ${item.id}, -1)" class="counter-btn text-[10px]"><i class="fas fa-minus"></i></button>
+                                    <span class="font-bold text-sm w-5 text-center">${item.quantity || 0}</span>
+                                    <button onclick="updateQuantity(event, ${item.id}, 1)" class="counter-btn text-[10px]"><i class="fas fa-plus"></i></button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- 備註區 -->
-                    <div class="mt-4 pt-3 border-t border-dashed border-orange-100">
-                        ${isEditing ? 
-                            `<textarea class="edit-note edit-input text-sm h-16" placeholder="備註...">${item.note || ''}</textarea>` : 
-                            (item.note ? `<p class="text-sm text-gray-500 leading-relaxed"><i class="far fa-sticky-note mr-2 text-orange-200"></i>${item.note}</p>` : '')
-                        }
-                    </div>
-
-                    <!-- 編輯動作按鈕 -->
-                    ${isEditing ? `
-                        <div class="mt-4 flex gap-2 justify-end">
-                            <button onclick="cancelEdit(event)" class="px-4 py-2 rounded-lg text-sm font-bold bg-gray-100 text-gray-500">取消</button>
-                            <button onclick="saveEdit(event, ${item.id})" class="px-4 py-2 rounded-lg text-sm font-bold theme-bg text-white">儲存修改</button>
-                        </div>
-                    ` : ''}
-                </div>
-            `;}).join('');
+                </div>`;
+            }).join('');
         }
-
         init();
     </script>
 </body>
