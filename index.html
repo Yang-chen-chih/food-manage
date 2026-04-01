@@ -88,6 +88,28 @@
         }
 
         #foodList { -webkit-overflow-scrolling: touch; }
+
+        .toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            padding: 12px 20px; border-radius: 8px; max-width: 300px;
+            font-size: 14px; z-index: 999; animation: slideUp 0.3s ease;
+        }
+
+        .toast.success { background: #4CAF50; color: white; }
+        .toast.error { background: #f44336; color: white; }
+        .toast.info { background: var(--theme); color: white; }
+
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(100px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        .status-indicator {
+            width: 8px; height: 8px; border-radius: 50%;
+            display: inline-block; margin-right: 6px;
+        }
+        .status-indicator.online { background: #4CAF50; }
+        .status-indicator.offline { background: #f44336; }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -110,9 +132,13 @@
     </div>
 
     <div class="max-w-xl mx-auto min-h-screen px-5 py-8 pb-20">
-        <header class="text-center mb-8">
+        <header class="text-center mb-8 flex items-center justify-center gap-4">
             <div class="app-title">
                 <i class="fas fa-carrot"></i> 食材小管家
+            </div>
+            <div id="connectionStatus" class="text-xs flex items-center" style="color: var(--muted);">
+                <span class="status-indicator online"></span>
+                <span id="statusText">連線中</span>
             </div>
         </header>
 
@@ -178,7 +204,7 @@
                 </div>
 
                 <button type="button" id="submitBtn" onclick="app.submitForm()" style="background-color: var(--theme)" class="w-full text-white font-extrabold py-4 rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 mt-6 text-lg">
-                    <span>確認上傳</span>
+                    <span id="submitBtnText">確認上傳</span>
                     <i class="fas fa-check-circle"></i>
                 </button>
             </form>
@@ -206,7 +232,13 @@
     <script>
         const SUPABASE_URL = 'https://eqjrudcgmryavwbjaecm.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxanJ1ZGNnbXJ5YXZ3YmphZWNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MjkzODgsImV4cCI6MjA4NzAwNTM4OH0.Tl9UvO41jlRPRmfw-bA6t5s_qMKQjHAfINUJRoRnB4A';
-        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Supabase 客戶端配置（防止凍結）
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: { persistSession: false },
+            realtime: { params: { eventsPerSecond: 10 } },
+            db: { schema: 'public' }
+        });
 
         const app = {
             items: [],
@@ -216,25 +248,104 @@
             stream: null,
             editId: null,
             cameraTarget: 'add',
+            isOnline: true,
+            syncTimeout: null,
 
-            async init() {
-                const { data } = await db.from('foods').select('*').order('created_at', { ascending: false });
-                this.items = data || [];
-                this.filtered = [...this.items];
-                this.render();
-                document.getElementById('loadingOverlay').style.display = 'none';
+            // ===== 工具函數 =====
+            showToast(message, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
             },
 
+            updateConnectionStatus(online) {
+                this.isOnline = online;
+                const statusIndicator = document.querySelector('.status-indicator');
+                const statusText = document.getElementById('statusText');
+                if (online) {
+                    statusIndicator.classList.remove('offline');
+                    statusIndicator.classList.add('online');
+                    statusText.textContent = '連線中';
+                } else {
+                    statusIndicator.classList.remove('online');
+                    statusIndicator.classList.add('offline');
+                    statusText.textContent = '離線中';
+                }
+            },
+
+            // 帶重試機制的 API 調用
+            async withRetry(fn, maxRetries = 3, delay = 1000) {
+                for (let i = 0; i < maxRetries; i++) {
+                    try {
+                        return await Promise.race([
+                            fn(),
+                            new Promise((_, reject) => 
+                                setTimeout(() => reject(new Error('超時')), 10000)
+                            )
+                        ]);
+                    } catch (error) {
+                        if (i === maxRetries - 1) throw error;
+                        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+                    }
+                }
+            },
+
+            // ===== 初始化與監控 =====
+            async init() {
+                try {
+                    this.withRetry(async () => {
+                        const { data, error } = await db.from('foods')
+                            .select('*')
+                            .order('created_at', { ascending: false });
+                        
+                        if (error) throw error;
+                        this.items = data || [];
+                        this.filtered = [...this.items];
+                        this.updateConnectionStatus(true);
+                    });
+                    
+                    this.render();
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                } catch (error) {
+                    console.error('初始化失敗:', error);
+                    this.updateConnectionStatus(false);
+                    this.showToast('無法連接到數據庫，請檢查網絡', 'error');
+                }
+            },
+
+            // 心跳檢測
+            startHeartbeat() {
+                setInterval(async () => {
+                    try {
+                        await Promise.race([
+                            db.from('foods').select('id').limit(1),
+                            new Promise((_, reject) => 
+                                setTimeout(() => reject(new Error('心跳超時')), 5000)
+                            )
+                        ]);
+                        this.updateConnectionStatus(true);
+                    } catch (error) {
+                        this.updateConnectionStatus(false);
+                    }
+                }, 30000); // 每 30 秒檢查一次
+            },
+
+            // ===== 相機功能 =====
             async triggerCamera(target) {
                 this.cameraTarget = target;
                 try {
-                    this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+                    this.stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: 'environment' }, 
+                        audio: false 
+                    });
                     const video = document.getElementById('cameraStream');
                     video.srcObject = this.stream;
                     video.onloadedmetadata = () => video.play();
                     document.getElementById('cameraContainer').style.display = 'block';
                 } catch (err) {
-                    alert('無法啟動相機');
+                    this.showToast('無法啟動相機', 'error');
                 }
             },
 
@@ -273,22 +384,18 @@
                 if (placeholder) placeholder.classList.add('hidden');
             },
 
-            handleFileSelect(callback) {
-                const input = this.cameraTarget === 'add' ? document.getElementById('imageInput') : document.getElementById('editImageInput');
-                const file = input.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => callback(e.target.result);
-                    reader.readAsDataURL(file);
-                }
-            },
-
+            // ===== 表單操作 =====
             async submitForm() {
                 const name = document.getElementById('foodName').value;
-                if (!name) return alert('請填寫名稱');
+                if (!name) {
+                    this.showToast('請填寫名稱', 'error');
+                    return;
+                }
 
                 const btn = document.getElementById('submitBtn');
                 btn.disabled = true;
+                const originalText = document.getElementById('submitBtnText').textContent;
+                document.getElementById('submitBtnText').textContent = '上傳中...';
 
                 const payload = {
                     name,
@@ -297,18 +404,32 @@
                     location: document.getElementById('foodLocation').value || '',
                     quantity: parseInt(document.getElementById('foodQuantity').value) || 1,
                     note: document.getElementById('foodNote').value || '',
-                    image: this.currentImage
+                    image: this.currentImage,
+                    created_at: new Date().toISOString()
                 };
 
-                await db.from('foods').insert([payload]);
-                document.getElementById('foodForm').reset();
-                this.currentImage = null;
-                document.getElementById('imagePreview').classList.add('hidden');
-                document.getElementById('uploadPlaceholder').classList.remove('hidden');
-                btn.disabled = false;
-                await this.init();
+                try {
+                    await this.withRetry(async () => {
+                        const { error } = await db.from('foods').insert([payload]);
+                        if (error) throw error;
+                    });
+
+                    document.getElementById('foodForm').reset();
+                    this.currentImage = null;
+                    document.getElementById('imagePreview').classList.add('hidden');
+                    document.getElementById('uploadPlaceholder').classList.remove('hidden');
+                    this.showToast('新增成功！', 'success');
+                    await this.loadItems(); // 只載入新項目
+                } catch (error) {
+                    console.error('新增失敗:', error);
+                    this.showToast('新增失敗，請重試', 'error');
+                } finally {
+                    btn.disabled = false;
+                    document.getElementById('submitBtnText').textContent = originalText;
+                }
             },
 
+            // ===== 編輯操作 =====
             toggleEdit(id) {
                 if (this.editId === id) return;
                 this.editId = id;
@@ -333,27 +454,93 @@
                     price: parseInt(card.querySelector('.edit-price').value) || 0,
                     location: card.querySelector('.edit-location').value,
                     note: card.querySelector('.edit-note').value,
-                    image: this.editImage
+                    image: this.editImage,
+                    updated_at: new Date().toISOString()
                 };
-                await db.from('foods').update(update).eq('id', id);
-                this.editId = null;
-                this.editImage = null;
-                await this.init();
+
+                try {
+                    await this.withRetry(async () => {
+                        const { error } = await db.from('foods').update(update).eq('id', id);
+                        if (error) throw error;
+                    });
+
+                    // 樂觀更新本地數據
+                    const itemIndex = this.items.findIndex(i => i.id === id);
+                    if (itemIndex !== -1) {
+                        this.items[itemIndex] = { ...this.items[itemIndex], ...update };
+                        this.filtered = [...this.items];
+                    }
+
+                    this.editId = null;
+                    this.editImage = null;
+                    this.showToast('修改成功！', 'success');
+                    this.render();
+                } catch (error) {
+                    console.error('保存失敗:', error);
+                    this.showToast('保存失敗，請重試', 'error');
+                }
             },
 
+            // ===== 數量與刪除操作 =====
             async updateQty(e, id, delta) {
                 e.stopPropagation();
                 const item = this.items.find(x => x.id === id);
-                item.quantity = Math.max(0, item.quantity + delta);
+                if (!item) return;
+
+                const newQty = Math.max(0, item.quantity + delta);
+                const oldQty = item.quantity;
+                
+                // 樂觀更新
+                item.quantity = newQty;
                 this.render();
-                await db.from('foods').update({ quantity: item.quantity }).eq('id', id);
+
+                try {
+                    await this.withRetry(async () => {
+                        const { error } = await db.from('foods').update({ quantity: newQty }).eq('id', id);
+                        if (error) throw error;
+                    });
+                } catch (error) {
+                    // 回滾
+                    item.quantity = oldQty;
+                    this.render();
+                    this.showToast('更新失敗，請重試', 'error');
+                }
             },
 
             async deleteItem(e, id) {
                 e.stopPropagation();
-                if (confirm('確定刪除？')) {
-                    await db.from('foods').delete().eq('id', id);
-                    await this.init();
+                if (!confirm('確定刪除？')) return;
+
+                try {
+                    await this.withRetry(async () => {
+                        const { error } = await db.from('foods').delete().eq('id', id);
+                        if (error) throw error;
+                    });
+
+                    this.items = this.items.filter(i => i.id !== id);
+                    this.filtered = [...this.items];
+                    this.showToast('刪除成功！', 'success');
+                    this.render();
+                } catch (error) {
+                    console.error('刪除失敗:', error);
+                    this.showToast('刪除失敗，請重試', 'error');
+                }
+            },
+
+            // ===== 搜尋與載入 =====
+            async loadItems() {
+                try {
+                    await this.withRetry(async () => {
+                        const { data, error } = await db.from('foods')
+                            .select('*')
+                            .order('created_at', { ascending: false });
+                        
+                        if (error) throw error;
+                        this.items = data || [];
+                        this.filtered = [...this.items];
+                    });
+                } catch (error) {
+                    console.error('載入失敗:', error);
                 }
             },
 
@@ -367,6 +554,7 @@
                 this.render();
             },
 
+            // ===== 渲染函數 =====
             renderEditCard(item) {
                 return `
                 <div class="list-card editing p-5" data-id="${item.id}">
@@ -456,25 +644,31 @@
             }
         };
 
-        // 事件監聽
+        // ===== 事件監聽 =====
         document.getElementById('imageInput').addEventListener('change', (e) => {
-            app.handleFileSelect = function(callback) {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => callback(ev.target.result);
-                    reader.readAsDataURL(file);
+            const file = e.target.files[0];
+            if (file) {
+                // 檢查檔案大小（限制 2MB）
+                if (file.size > 2 * 1024 * 1024) {
+                    app.showToast('圖片太大，請選擇小於 2MB 的圖片', 'error');
+                    return;
                 }
-            };
-            app.handleFileSelect((data) => {
-                app.currentImage = data;
-                app.updateImagePreview('imagePreview', data);
-            });
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    app.currentImage = ev.target.result;
+                    app.updateImagePreview('imagePreview', ev.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
         });
 
         document.getElementById('editImageInput').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
+                if (file.size > 2 * 1024 * 1024) {
+                    app.showToast('圖片太大，請選擇小於 2MB 的圖片', 'error');
+                    return;
+                }
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     app.editImage = ev.target.result;
@@ -489,7 +683,20 @@
             app.search(e.target.value);
         });
 
+        // ===== 啟動應用 =====
         app.init();
+        app.startHeartbeat();
+
+        // 監聽網絡狀態
+        window.addEventListener('online', () => {
+            app.updateConnectionStatus(true);
+            app.showToast('連線已恢復', 'success');
+        });
+
+        window.addEventListener('offline', () => {
+            app.updateConnectionStatus(false);
+            app.showToast('已離線模式', 'error');
+        });
     </script>
 </body>
 </html>
